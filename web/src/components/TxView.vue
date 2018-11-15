@@ -30,22 +30,24 @@
           class="elevation-1">
           <v-progress-linear slot="progress" color="blue" indeterminate></v-progress-linear>
           <template slot="items" slot-scope="props">
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.symbol }}</td>
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.amount }}</td>
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">${{ props.item.value }}</td>
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.dif }}</td>
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">
-              <a @click="openTx(props.item.txHash)">{{props.item.txHash.substring(0,13)}}...</a>
-            </td>
+            <tr :class="[props.item.dif > 0 ? 'matchRow' : '']" :key="props.index">
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.symbol }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.amount }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">${{ props.item.value }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.dif }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">
+                <a @click="openTx(props.item.txHash)">{{props.item.txHash.substring(0,13)}}...</a>
+              </td>
 
-            <td v-if="props.item.direction === 'IN'" class="text-xs-left">
-              <v-chip small color="green" text-color="white">IN</v-chip>
-            </td>
-            <td v-else class="text-xs-left">
-              <v-chip small color="red" text-color="white">OUT</v-chip>
-            </td>
+              <td v-if="props.item.direction === 'IN'" class="text-xs-left">
+                <v-chip small color="green" text-color="white">IN</v-chip>
+              </td>
+              <td v-else class="text-xs-left">
+                <v-chip small color="red" text-color="white">OUT</v-chip>
+              </td>
 
-            <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.timeStamp }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.timeStamp }}</td>
+            </tr>
           </template>
           <!-- <template slot="footer">
             <td class="textEnd" colspan="100%">
@@ -128,26 +130,11 @@ export default {
         sortBy: 'timeStamp',
         descending: true
       },
-      items: [
-        // {
-        //   symbol: "T",
-        //   amount: 444,
-        //   value: 3,
-        //   dif: 0,
-        //   txHash: "0x000",
-        //   timeStamp: 1234567,
-        //   direction: "IN",
-        // },
-        // {
-        //   symbol: "F",
-        //   amount: 444,
-        //   value: 444,
-        //   dif: 0,
-        //   txHash: "0x000",
-        //   timeStamp: 1234567,
-        //   direction: "OUT",
-        // }
-      ]
+      items: [],
+      // ticker setting
+      lastHeight: 0,
+      rescan: 6, //each number of blocks to do re-scan
+      lastRescan: 0
     };
   },
   methods: {
@@ -183,11 +170,20 @@ export default {
         return item;
       });
     },
-    getTxRange(min, max) {
+    calculateRange(min, max) {
+      // use last reScan if min is more than reScan threshold
+      let lastRescan = this.lastRescan;
+      if(min - lastRescan >= this.rescan) {
+        this.log(`Re-scan from ${lastRescan} to ${max}`);
+        // update lastRescan
+        this.lastRescan = min;
+        return { min: lastRescan, max };
+      }
+      // normal case
       // if min === 0 OR min === max then use max as min
-      // otherwise use min + 1
+      // otherwise use min
       return {
-        min: min === 0 || min === max ? max : min + 1,
+        min: min === 0 || min === max ? max : min,
         max: max
       };
     },
@@ -197,8 +193,7 @@ export default {
       vm.RUNNING(true);
       this.log("Starting...");
 
-      let lastHeight = 0;
-      const fetchTx = d => {
+      const fetchTx = delay => {
         setTimeout(async () => {
           if(vm.stopTicker) {
             this.log("Stopping...");
@@ -208,17 +203,25 @@ export default {
             return;
           }
           if (vm.ready) {
-            this.log("Start polling");
+            // this.log("Start polling");
             await vm.REFRESH_MASTER_RATES();
-            let heightChanged = await vm.REFRESH_MAX_BLOCK_HEIGHT();
             // only fetch tx if height changed
-            if (heightChanged) {
+            if (await vm.REFRESH_MAX_BLOCK_HEIGHT()) {
+              // init lastRescan
+              if(!this.lastRescan) this.lastRescan = vm.maxBlockHeight;
+              this.log(`New block height: ${vm.maxBlockHeight}`);
               let { result } = await vm.GET_TX(
-                vm.getTxRange(lastHeight, vm.maxBlockHeight)
+                vm.calculateRange(this.lastHeight, vm.maxBlockHeight)
               );
               // save check point
-              lastHeight = vm.maxBlockHeight;
-              this.log(`Tx count: ${result.length}`);
+              this.lastHeight = vm.maxBlockHeight;
+              let txCount = result.length;
+              this.log(`Tx count: ${txCount}`);
+              // remove duplicates
+              result = result.filter(r => !vm.items.some(i => i.txHash === r.hash));
+              if(txCount != result.length)
+                this.log(`Ignored ${txCount - result.length} duplicates`);
+
               // fill missing contract data
               // forEach dont do well with async
               // for-in, for-of cant update the item
@@ -244,16 +247,15 @@ export default {
               });
               vm.items.push(...items);
             }
-            this.log("No new blocks");
           }
-          // this.log("Back to sleep");
           fetchTx(vm.txInterval);
-        }, d);
+        }, delay);
       };
       fetchTx(0);
       this.log("Started sucessfully");
     },
     log(message) {
+      if(!this.showConsole) return;
       let now = new Date(Date.now());
       this.consoleContent += `${now.toLocaleTimeString()} - ${message}\n`;
     },
@@ -301,7 +303,6 @@ export default {
 .textEnd {
   text-align: end;
 }
-
 .match1 {
   color: greenyellow;
 }
