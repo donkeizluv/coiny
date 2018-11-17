@@ -97,8 +97,7 @@ export default {
 };
 </script>
 <style scoped>
-  .no-padding {
-    padding: 0!important;
-  }
+.no-padding {
+  padding: 0 !important;
+}
 </style>
-

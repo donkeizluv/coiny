@@ -6,6 +6,13 @@
       <v-checkbox
         d-inline-block
         small
+        label="Pause"
+        @click="pauseClicked"
+        v-model="isPaused">
+      </v-checkbox>
+      <v-checkbox
+        d-inline-block
+        small
         label="IN only"
         v-model="inOnly">
       </v-checkbox>
@@ -26,14 +33,13 @@
           :headers="headers"
           :items="getItems"
           :pagination.sync="pagination"
-          :loading="loading"
           class="elevation-1">
           <v-progress-linear slot="progress" color="blue" indeterminate></v-progress-linear>
           <template slot="items" slot-scope="props">
             <tr :class="[props.item.dif > 0 ? 'matchRow' : '']" :key="props.index">
               <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.symbol }}</td>
               <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.amount }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">${{ props.item.value }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.value ? "$" + props.item.value : "?" }}</td>
               <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.dif }}</td>
               <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">
                 <a @click="openTx(props.item.txHash)">{{props.item.txHash.substring(0,13)}}...</a>
@@ -49,11 +55,22 @@
               <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.timeStamp }}</td>
             </tr>
           </template>
-          <!-- <template slot="footer">
-            <td class="textEnd" colspan="100%">
-             
-            </td>
-          </template> -->
+          <template slot="pageText" slot-scope="props">
+            <v-progress-circular
+              indeterminate
+              size=26
+              v-if="isLoading"
+              color="green">
+            </v-progress-circular>
+            <v-progress-circular
+              v-else
+              size=26
+              value=100
+              color="#686868">
+            </v-progress-circular>
+            &nbsp;
+            Total: {{ props.itemsLength }}
+          </template>
         </v-data-table>
       </v-flex>
       <v-flex align-content-end xs12>
@@ -66,6 +83,7 @@
           outline
           background-color="green"
           height="400px"
+          color="gray"
           :value="consoleContent">
         </v-textarea>
         <v-btn v-show="showConsole" color="secondary" @click="consoleContent = ''">Clear</v-btn>
@@ -76,6 +94,7 @@
 
 <script>
 import { mapActions, mapGetters } from "vuex";
+import Ticker from "./txTicker";
 
 export default {
   mounted() {
@@ -83,7 +102,7 @@ export default {
     // looks like HMR is causing multiple call on this
     this.start();
   },
-  beforeDestroy(){
+  beforeDestroy() {
     this.stopTicker = true;
   },
   computed: {
@@ -96,22 +115,36 @@ export default {
       "maxBlockHeight",
       "masterRates",
       "running",
-      "loading"
+      "loading",
+      "lastLog"
     ]),
+    isLoading() {
+      // app loading
+      if(this.loading) return true;
+      //view loading
+      return this.localLoading;
+    },
     getItems() {
       const vm = this;
       let items = vm.items
         .map(i => i)
-        .filter(i => vm.inOnly ? i.direction === "IN" : true);
+        .filter(i => (vm.inOnly ? i.direction === "IN" : true));
       items.forEach(i => {
         i.dif = (i.value - vm.minValue).toFixed(3);
-      })
-      items = items.filter(i => vm.plusDifOnly ? i.dif > 0 : true);
+      });
+      items = items.filter(i => (vm.plusDifOnly ? i.dif > 0 : true));
       return items;
+    }
+  },
+  watch: {
+    lastLog(log) {
+      this.log(log);
     }
   },
   data() {
     return {
+      localLoading: false,
+      isPaused: false,
       consoleContent: "",
       stopTicker: false,
       inOnly: false,
@@ -127,7 +160,7 @@ export default {
         { text: "Time", value: "timeStamp" }
       ],
       pagination: {
-        sortBy: 'timeStamp',
+        sortBy: "timeStamp",
         descending: true
       },
       items: [],
@@ -150,18 +183,21 @@ export default {
       return raw.map(t => {
         let item = {
           symbol: t.tokenSymbol,
-          amount: t.tokenDecimal ? (t.value / Math.pow(10, t.tokenDecimal)).toFixed(3) : "N/A",
+          amount: t.tokenDecimal
+            ? (t.value / Math.pow(10, t.tokenDecimal)).toFixed(3)
+            : "N/A",
           value: 0,
           dif: 0,
           txHash: t.hash,
           timeStamp: this.timeStampToDateString(t.timeStamp),
-          direction: this.walletAddress === t.to ? "IN" : "OUT" 
+          direction: this.walletAddress === t.to ? "IN" : "OUT"
         };
-        if(!isNaN(item.amount)){
+        if (!isNaN(item.amount)) {
           // calculate value of this tx
-          let marketInfo = this.masterRates
-            .find(mr => mr.symbol.toUpperCase() === item.symbol.toUpperCase());
-          if(!marketInfo){
+          let marketInfo = this.masterRates.find(
+            mr => mr.symbol.toUpperCase() === item.symbol.toUpperCase()
+          );
+          if (!marketInfo) {
             this.log(`ERROR: can not get market info of ${item.symbol}`);
             return item;
           }
@@ -173,7 +209,7 @@ export default {
     calculateRange(min, max) {
       // use last reScan if min is more than reScan threshold
       let lastRescan = this.lastRescan;
-      if(min - lastRescan >= this.rescan) {
+      if (min - lastRescan >= this.rescan) {
         this.log(`Re-scan from ${lastRescan} to ${max}`);
         // update lastRescan
         this.lastRescan = min;
@@ -188,120 +224,40 @@ export default {
       };
     },
     start() {
-      const vm = this;
-      if (vm.running) return;
-      vm.RUNNING(true);
+      if (this.running) return;
+      this.RUNNING(true);
       this.log("Starting...");
-
-      const fetchTx = delay => {
-        setTimeout(async () => {
-          if(vm.stopTicker) {
-            this.log("Stopping...");
-            // kill this loop
-            vm.stopTicker = false;
-            vm.RUNNING(false);
-            return;
-          }
-          if (vm.ready) {
-            // this.log("Start polling");
-            await vm.REFRESH_MASTER_RATES();
-            // only fetch tx if height changed
-            if (await vm.REFRESH_MAX_BLOCK_HEIGHT()) {
-              // init lastRescan
-              if(!this.lastRescan) this.lastRescan = vm.maxBlockHeight;
-              this.log(`New block height: ${vm.maxBlockHeight}`);
-              let { result } = await vm.GET_TX(
-                vm.calculateRange(this.lastHeight, vm.maxBlockHeight)
-              );
-              // save check point
-              this.lastHeight = vm.maxBlockHeight;
-              let txCount = result.length;
-              this.log(`Tx count: ${txCount}`);
-              // remove duplicates
-              result = result.filter(r => !vm.items.some(i => i.txHash === r.hash));
-              if(txCount != result.length)
-                this.log(`Ignored ${txCount - result.length} duplicates`);
-
-              // fill missing contract data
-              // forEach dont do well with async
-              // for-in, for-of cant update the item
-              for (let index = 0; index < result.length; index++) {
-                const t = result[index];
-                if(t.tokenDecimal)
-                  continue;
-                let contract = await vm.GET_CONTRACT(t.contractAddress);
-                if(!contract && !contract.error){
-                  // TODO: notify
-                  vm.log(`ERROR: can not get contract info of ${t.contractAddress}`);
-                  continue;
-                }
-                t.tokenDecimal = contract.decimal;
-                t.tokenSymbol = contract.symbol;
-                
-              }
-              let items = vm.convertToItems(result);
-              // notify
-              items.forEach(i => {
-                if(i.value > this.minValue)
-                  this.ALERT(i);
-              });
-              vm.items.push(...items);
-            }
-          }
-          fetchTx(vm.txInterval);
-        }, delay);
-      };
-      fetchTx(0);
+      Ticker.start(this);
       this.log("Started sucessfully");
     },
     log(message) {
-      if(!this.showConsole) return;
+      if (!this.showConsole) return;
       let now = new Date(Date.now());
       this.consoleContent += `${now.toLocaleTimeString()} - ${message}\n`;
     },
     openTx(hash) {
       window.open("https://etherscan.io/tx/{hash}".replace("{hash}", hash));
     },
+    pauseClicked() {
+      if (this.isPaused) {
+        this.log("Pause...");
+        return;
+      }
+      this.log("Resume...");
+    },
     txLink(hash) {
       return "https://etherscan.io/tx/{hash}".replace("{hash}", hash);
     },
     timeStampToDateString(timeStamp) {
       return new Date(timeStamp * 1000).toLocaleString();
-    },
-    // notifyMe(tx) {
-    //   // doest work really well
-    //   // chrome does not accept http to send push...
-    //   const vm = this;
-    //   if (!("Notification" in window)) {
-    //     this.$emit("error", "This browser does not support desktop notification");
-    //   }
-    //   else if (Notification.permission === "granted") {
-    //     let notification = new Notification(`${tx.symbol} - ${tx.value}`);
-    //     return;
-    //   }
-    //   else if (Notification.permission !== "denied") {
-    //     Notification.requestPermission().then(function (permission) {
-    //       // If the user accepts, let's create a notification
-    //       if (permission === "granted") {
-    //         vm.$emit("success", "Notification granted!");
-    //         let notification = new Notification(`${tx.symbol} - ${tx.value}`);
-    //         notification.onclick = function(event) {
-    //           event.preventDefault();
-    //           window.open(vm.txLink(tx.txHash));
-    //         }
-    //       }
-    //     });
-    //   }
-    //   vm.$emit("info", "Please allow to receive notification.");
-    // }
+    }
   }
 };
 </script>
 
 <style scoped>
-
-.textEnd {
-  text-align: end;
+.textStart {
+  text-align: start;
 }
 .match1 {
   color: greenyellow;
@@ -314,5 +270,8 @@ export default {
 }
 .padding1 {
   padding-top: 25px;
+}
+.console-color textarea {
+  color: gray !important;
 }
 </style>

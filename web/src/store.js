@@ -15,6 +15,7 @@ export default new Vuex.Store({
     loading: false,
     running: false,
     lastError: null,
+    lastLog: null,
     isConfigValid: false,
     config: null,
     masterRates: null,
@@ -31,7 +32,7 @@ export default new Vuex.Store({
       "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
 
     txInterval: 6666,
-    ratesInterval: 9999999999,
+    ratesInterval: 10000,
     minValue: 100,
     // minBlockHeight: 0,
     maxBlockHeight: 0
@@ -41,6 +42,7 @@ export default new Vuex.Store({
     loading: s => s.loading,
     running: s => s.running,
     lastError: s => s.lastError,
+    lastLog: s => s.lastLog,
     isConfigValid: s => s.isConfigValid,
     masterRates: s => s.masterRates,
     txInterval: s => s.txInterval,
@@ -50,6 +52,10 @@ export default new Vuex.Store({
     apiKey: s => s.apiKey,
     walletAddress: s => s.walletAddress,
     maxBlockHeight: s => s.maxBlockHeight,
+    masterPriceApi: s => s.masterPriceApi,
+    blockHeightApi: s => s.blockHeightApi,
+    txByAddressApi: s => s.txByAddressApi,
+    readContractApi: s => s.readContractApi
   },
   mutations: {
     LOADING: (s, v) => {
@@ -59,7 +65,11 @@ export default new Vuex.Store({
       s.isConfigValid = v;
     },
     CONFIG: (s, v) => {
-      s.config = v;
+      s.apiKey = v.apiKey;
+      s.txInterval = v.txInterval;
+      s.ratesInterval = v.ratesInterval;
+      s.minValue = v.minValue;
+      s.walletAddress = v.walletAddress;
     },
     MASTER_RATES: (s, v) => {
       s.masterRates = v;
@@ -106,30 +116,23 @@ export default new Vuex.Store({
       let cachedRates = localStorage.getItem(masterRatesStoreName);
       if (cachedRates) {
         let rates = JSON.parse(cachedRates);
-        // cache avalabile, check if its stale
-        let expired = Date.now();
-        expired += state.ratesInterval;
-        console.log(expired);
-        if (rates.age < expired) {
+        if (rates.age + state.ratesInterval > Date.now()) {
           // still good
-          console.log("master_rates: still good -> reuse");
           commit("MASTER_RATES", rates.data);
         } else {
           // stale, fetch new
-          console.log("master_rates: stale...");
           rates = await dispatch("FETCH_MASTER_RATES");
           dispatch("CACHE_MASTER_RATES", rates);
           commit("MASTER_RATES", rates);
         }
       } else {
-        console.log("master_rates: no cache found...");
         let rates = await dispatch("FETCH_MASTER_RATES");
         dispatch("CACHE_MASTER_RATES", rates);
         commit("MASTER_RATES", rates);
       }
     },
     CACHE_MASTER_RATES: (s, p) => {
-      console.log("master_rates: cache new rates...");
+      // console.log("master_rates: cache new rates...");
       localStorage.setItem(
         masterRatesStoreName,
         JSON.stringify({
@@ -139,6 +142,7 @@ export default new Vuex.Store({
       );
     },
     FETCH_MASTER_RATES: async ({ state }) => {
+      state.lastLog = "Refreshing master rates";
       let { data } = await Axios.get(state.masterPriceApi);
       return data;
     },
@@ -212,6 +216,10 @@ export default new Vuex.Store({
         value: p.value,
         hash: p.txHash
       });
+    },
+    UPDATE_CONFIG: ({ commit }, p) => {
+      if (!p) throw new Error("Invalid payload.");
+      commit("CONFIG", p);
     }
   }
 });
