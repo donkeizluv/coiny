@@ -8,13 +8,13 @@
         {{ snackMessage }}
         <v-btn flat @click.native="snackbar = false">X</v-btn>
     </v-snackbar>
-    <v-dialog v-model="errorDialog" persistent max-width="290">
+    <!-- <v-dialog v-model="blockingDialog" persistent max-width="290">
       <v-btn slot="activator" color="primary" dark>Open Dialog</v-btn>
       <v-card>
         <v-card-title class="headline">Error :(</v-card-title>
         <v-card-text>App initalization failed. Please try again after sometimes.</v-card-text>
       </v-card>
-    </v-dialog>
+    </v-dialog> -->
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
         <span>Coiny</span>
@@ -28,7 +28,7 @@
       </v-btn>
     </v-toolbar>
 
-    <v-content class="no-padding">
+    <v-content>
        <v-fade-transition mode='out-in'>
          <keep-alive>
            <view :is="currentView"
@@ -53,23 +53,18 @@ export default {
     ConfigView
   },
   async created() {
-    try {
-      await this.INIT();
-      if (this.ready) {
-        // set view to tx if everything is ok
-        this.currentView = "TxView";
-      }
-    } catch (error) {
-      console.log(error);
-      this.errorDialog = true;
+    await this.INIT();
+    if (this.isConfigValid) {
+      this.currentView = "TxView";
     }
+
   },
   computed: {
-    ...mapGetters(["ready"])
+    ...mapGetters(["isConfigValid"])
   },
   data() {
     return {
-      errorDialog: false,
+      // blockingDialog: false,
       snackbar: false,
       snackMessage: "",
       snackType: "info",

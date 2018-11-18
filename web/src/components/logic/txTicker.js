@@ -1,18 +1,23 @@
 export default {
+  stopTicker: false,
+  stop() {
+    this.stopTicker = true;
+  },
+  //TODO: vm as a interface
   start(vm) {
+    this.stopTicker = false;
     const tick = delay => {
       setTimeout(async () => {
-        if (vm.stopTicker) {
+        if (this.stopTicker) {
           vm.log("Stopping...");
-          // kill vm loop
-          vm.stopTicker = false;
+          // kill this closure
           vm.RUNNING(false);
           return;
         }
         if (vm.isPaused) {
           tick(vm.txInterval);
         }
-        if (vm.ready) {
+        if (vm.isConfigValid) {
           // vm.log("Start polling");
           vm.localLoading = true;
           await vm.REFRESH_MASTER_RATES();
@@ -59,7 +64,10 @@ export default {
             vm.items.push(...items);
             vm.localLoading = false;
           }
+        } else {
+          vm.log("Invalid config");
         }
+        //sleep
         tick(vm.txInterval);
       }, delay);
     };

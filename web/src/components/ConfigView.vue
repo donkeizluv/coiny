@@ -50,11 +50,19 @@
             :value="readContractApi"
             label="getContract">
           </v-text-field>
+          <v-text-field
+            disabled
+            :value="openTxUrl"
+            label="openTxUrl">
+          </v-text-field>
           <v-btn @click="applyConfig" :disabled="!isConfigValid" color="success">
             Apply
           </v-btn>
           <v-btn @click="loadValues" color="info">
             Reload
+          </v-btn>
+          <v-btn @click="loadDefault" color="warning">
+            Default
           </v-btn>
         </v-form>
       </v-flex>
@@ -83,7 +91,8 @@ export default {
       "blockHeightApi",
       "txByAddressApi",
       "readContractApi",
-      "ratesInterval"
+      "ratesInterval",
+      "openTxUrl"
     ]),
     isConfigValid(){
       if(!this.newApiKey) return false;
@@ -109,7 +118,8 @@ export default {
   },
   methods: {
     ...mapActions([
-      "UPDATE_CONFIG"
+      "UPDATE_CONFIG",
+      "LOAD_DEFAULT_CONFIG"
     ]),
     loadValues() {
       this.newApiKey = this.apiKey;
@@ -128,6 +138,10 @@ export default {
         ratesInterval: this.newRatesInterval
       };
       this.UPDATE_CONFIG(p);
+      this.loadValues();
+    },
+    loadDefault() {
+      this.LOAD_DEFAULT_CONFIG();
       this.loadValues();
     }
   },

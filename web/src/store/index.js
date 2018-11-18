@@ -11,17 +11,19 @@ const tokenInfoStoreName = "coiny_tokenInfo";
 
 export default new Vuex.Store({
   state: {
-    ready: false,
     loading: false,
     running: false,
     lastError: null,
     lastLog: null,
     isConfigValid: false,
-    config: null,
     masterRates: null,
-    //TODO: move these to config when done
-    apiKey: "NF1F9V7CVRW69M9G51SEZXB2DYCR387VZ4",
-    walletAddress: "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208",
+    // config
+    apiKey: null,
+    walletAddress: null,
+    txInterval: null,
+    ratesInterval: null,
+    minValue: null,
+    // api
     masterPriceApi:
       "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd",
     blockHeightApi:
@@ -30,32 +32,27 @@ export default new Vuex.Store({
       "http://api.etherscan.io/api?module=account&action=tokentx&address={address}&startblock={start}&endblock={end}&sort=asc&apikey={key}",
     readContractApi:
       "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
-
-    txInterval: 6666,
-    ratesInterval: 10000,
-    minValue: 100,
-    // minBlockHeight: 0,
+    openTxUrl: "https://etherscan.io/tx/{hash}",
     maxBlockHeight: 0
   },
   getters: {
-    ready: s => s.ready,
     loading: s => s.loading,
     running: s => s.running,
     lastError: s => s.lastError,
     lastLog: s => s.lastLog,
     isConfigValid: s => s.isConfigValid,
     masterRates: s => s.masterRates,
-    txInterval: s => s.txInterval,
+    txInterval: s => s.txInterval || 999,
     minValue: s => s.minValue,
-    ratesInterval: s => s.ratesInterval,
-    config: s => s.config,
+    ratesInterval: s => s.ratesInterval || 2222,
     apiKey: s => s.apiKey,
     walletAddress: s => s.walletAddress,
     maxBlockHeight: s => s.maxBlockHeight,
     masterPriceApi: s => s.masterPriceApi,
     blockHeightApi: s => s.blockHeightApi,
     txByAddressApi: s => s.txByAddressApi,
-    readContractApi: s => s.readContractApi
+    readContractApi: s => s.readContractApi,
+    openTxUrl: s => s.openTxUrl
   },
   mutations: {
     LOADING: (s, v) => {
@@ -85,29 +82,8 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    INIT: async ({ dispatch, state }) => {
-      // check config then commit to state
-      // let config = localStorage.getItem(configStoreName);
-      let config = "{}";
-      if (config) {
-        config = JSON.parse(config);
-        //TODO: check config valid
-        state.config = config;
-        state.isConfigValid = true;
-        state.loading = true;
-        await dispatch("REFRESH_MASTER_RATES");
-        // await dispatch("REFRESH_MAX_BLOCK_HEIGHT");
-        state.loading = false;
-        state.ready = true;
-        return true;
-      }
-      // invalid config
-      localStorage.removeItem("configStoreName");
-      return false;
-    },
-    SAVE_CONFIG: ({ commit }, p) => {
-      localStorage.setItem(configStoreName, JSON.stringify(p));
-      commit("CONFIG", p);
+    INIT: async ({ dispatch }) => {
+      dispatch("LOAD_CONFIG");
     },
     RUNNING: ({ commit }, p) => {
       commit("RUNNING", p);
@@ -217,9 +193,37 @@ export default new Vuex.Store({
         hash: p.txHash
       });
     },
-    UPDATE_CONFIG: ({ commit }, p) => {
+    LOAD_CONFIG: ({ dispatch, state }) => {
+      let config = localStorage.getItem(configStoreName);
+      if (config) {
+        config = JSON.parse(config);
+        if (dispatch("UPDATE_CONFIG", config)) {
+          state.isConfigValid = true;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    },
+    UPDATE_CONFIG: ({ commit, dispatch, state }, p) => {
       if (!p) throw new Error("Invalid payload.");
+      // check config
       commit("CONFIG", p);
+      dispatch("SAVE_CONFIG", p);
+      state.isConfigValid = true;
+      return true;
+    },
+    SAVE_CONFIG: (s, p) => {
+      localStorage.setItem(configStoreName, JSON.stringify(p));
+    },
+    LOAD_DEFAULT_CONFIG: ({ state }) => {
+      state.apiKey = "NF1F9V7CVRW69M9G51SEZXB2DYCR387VZ4";
+      state.walletAddress = "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208";
+      state.txInterval = 6666;
+      state.ratesInterval = 10000;
+      state.minValue = 5000;
+      state.isConfigValid = true;
+      state.lastLog = "Loaded default config";
     }
   }
 });

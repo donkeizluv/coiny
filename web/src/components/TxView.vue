@@ -31,45 +31,55 @@
       <v-flex xs12>
         <v-data-table
           :headers="headers"
-          :items="getItems"
+          :items="displayItems"
           :pagination.sync="pagination"
           class="elevation-1">
-          <v-progress-linear slot="progress" color="blue" indeterminate></v-progress-linear>
+          <template slot="headers" slot-scope="props">
+            <tr>
+              <th
+                v-for="header in props.headers"
+                  :key="header.text"
+                  :class="['column sortable', pagination.descending ? 'desc' : 'asc', header.value === pagination.sortBy ? 'active' : '', 'text-xs-left']"
+                  @click="changeSort(header.value)">
+                 <template v-if="header.value === 'symbol'">
+                  <v-progress-circular
+                    indeterminate
+                    size=24
+                    v-if="isLoading"
+                    color="green">
+                  </v-progress-circular>
+                  <v-progress-circular
+                    v-else
+                    size=24
+                    value=100
+                    color="#686868">
+                  </v-progress-circular>
+                </template>
+                <v-icon small>mdi-arrow-up</v-icon>
+                {{ header.text }}
+              </th>
+            </tr>
+          </template>
           <template slot="items" slot-scope="props">
-            <tr :class="[props.item.dif > 0 ? 'matchRow' : '']" :key="props.index">
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.symbol }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.amount }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.value ? "$" + props.item.value : "?" }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.dif }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">
+            <tr :key="props.index">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.symbol }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.amount }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.value ? "$" + props.item.value : "?" }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.dif }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
                 <a @click="openTx(props.item.txHash)">{{props.item.txHash.substring(0,13)}}...</a>
               </td>
 
-              <td v-if="props.item.direction === 'IN'" class="text-xs-left">
+              <td v-if="props.item.direction === 'IN'">
                 <v-chip small color="green" text-color="white">IN</v-chip>
               </td>
-              <td v-else class="text-xs-left">
+              <td v-else>
                 <v-chip small color="red" text-color="white">OUT</v-chip>
               </td>
 
-              <td :class="[props.item.dif > 0 ? 'match1' : '', 'text-xs-left']">{{ props.item.timeStamp }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.timeStamp }}</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.elapsedMinute }}m ago</td>
             </tr>
-          </template>
-          <template slot="pageText" slot-scope="props">
-            <v-progress-circular
-              indeterminate
-              size=26
-              v-if="isLoading"
-              color="green">
-            </v-progress-circular>
-            <v-progress-circular
-              v-else
-              size=26
-              value=100
-              color="#686868">
-            </v-progress-circular>
-            &nbsp;
-            Total: {{ props.itemsLength }}
           </template>
         </v-data-table>
       </v-flex>
@@ -94,7 +104,7 @@
 
 <script>
 import { mapActions, mapGetters } from "vuex";
-import Ticker from "./txTicker";
+import Ticker from "./logic/txTicker";
 
 export default {
   mounted() {
@@ -103,20 +113,21 @@ export default {
     this.start();
   },
   beforeDestroy() {
-    this.stopTicker = true;
+    Ticker.stop();
   },
   computed: {
     ...mapGetters([
       "txInterval",
       "ratesInterval",
       "minValue",
-      "ready",
+      "isConfigValid",
       "walletAddress",
       "maxBlockHeight",
       "masterRates",
       "running",
       "loading",
-      "lastLog"
+      "lastLog",
+      "openTxUrl"
     ]),
     isLoading() {
       // app loading
@@ -124,15 +135,15 @@ export default {
       //view loading
       return this.localLoading;
     },
-    getItems() {
-      const vm = this;
-      let items = vm.items
+    displayItems() {
+      let items = this.items
         .map(i => i)
-        .filter(i => (vm.inOnly ? i.direction === "IN" : true));
+        .filter(i => (this.inOnly ? i.direction === "IN" : true));
       items.forEach(i => {
-        i.dif = (i.value - vm.minValue).toFixed(3);
+        i.dif = (i.value - this.minValue).toFixed(3);
+        i.elapsedMinute = this.elapsedMinute(i.tick)
       });
-      items = items.filter(i => (vm.plusDifOnly ? i.dif > 0 : true));
+      items = items.filter(i => (this.plusDifOnly ? i.dif > 0 : true));
       return items;
     }
   },
@@ -146,7 +157,6 @@ export default {
       localLoading: false,
       isPaused: false,
       consoleContent: "",
-      stopTicker: false,
       inOnly: false,
       showConsole: true,
       plusDifOnly: false,
@@ -157,10 +167,11 @@ export default {
         { text: "Dif", value: "dif" },
         { text: "Tx", value: "txHash", sortable: false },
         { text: "Direction", value: "direction" },
-        { text: "Time", value: "timeStamp" }
+        { text: "Time", value: "timeStamp" },
+        { text: "Elapsed", value: "elapsedMinute" }
       ],
       pagination: {
-        sortBy: "timeStamp",
+        sortBy: "elapsedMinute",
         descending: true
       },
       items: [],
@@ -189,7 +200,9 @@ export default {
           value: 0,
           dif: 0,
           txHash: t.hash,
+          tick: t.timeStamp,
           timeStamp: this.timeStampToDateString(t.timeStamp),
+          elapsedMinute: 0,
           direction: this.walletAddress === t.to ? "IN" : "OUT"
         };
         if (!isNaN(item.amount)) {
@@ -236,7 +249,7 @@ export default {
       this.consoleContent += `${now.toLocaleTimeString()} - ${message}\n`;
     },
     openTx(hash) {
-      window.open("https://etherscan.io/tx/{hash}".replace("{hash}", hash));
+      window.open(this.openTxUrl.replace("{hash}", hash));
     },
     pauseClicked() {
       if (this.isPaused) {
@@ -246,10 +259,22 @@ export default {
       this.log("Resume...");
     },
     txLink(hash) {
-      return "https://etherscan.io/tx/{hash}".replace("{hash}", hash);
+      return this.openTxUrl.replace("{hash}", hash);
     },
     timeStampToDateString(timeStamp) {
       return new Date(timeStamp * 1000).toLocaleString();
+    },
+    changeSort (column) {
+      if (this.pagination.sortBy === column) {
+        this.pagination.descending = !this.pagination.descending;
+      } else {
+        this.pagination.sortBy = column;
+        this.pagination.descending = false;
+      }
+    },
+    elapsedMinute(timeStamp) {
+      let diff = Math.abs(Date.now() - timeStamp * 1000);
+      return Math.floor(diff / 60000);
     }
   }
 };
@@ -262,11 +287,8 @@ export default {
 .match1 {
   color: greenyellow;
 }
-.match2 {
-  color: green;
-}
-.match3 {
-  color: darkolivegreen;
+.match0 {
+  color: gray;
 }
 .padding1 {
   padding-top: 25px;
