@@ -1,9 +1,11 @@
+/* eslint-disable no-debugger */
+/* eslint-disable no-console */
 export default {
   stopTicker: false,
   stop() {
     this.stopTicker = true;
   },
-  //TODO: vm as a interface
+  //TODO: vm as an interface
   start(vm) {
     this.stopTicker = false;
     const tick = delay => {
@@ -20,7 +22,7 @@ export default {
         if (vm.isConfigValid) {
           // vm.log("Start polling");
           vm.localLoading = true;
-          await vm.REFRESH_MASTER_RATES();
+          await vm.REFRESH_COIN_LIST();
           // only fetch tx if height changed
           if (await vm.REFRESH_MAX_BLOCK_HEIGHT()) {
             // init lastRescan
@@ -45,16 +47,24 @@ export default {
             // for-in, for-of cant update the item
             for (let index = 0; index < result.length; index++) {
               const t = result[index];
-              if (t.tokenDecimal) continue;
-              let contract = await vm.GET_CONTRACT(t.contractAddress);
-              if (!contract && !contract.error) {
-                vm.log(
-                  `ERROR: can not get contract info of ${t.contractAddress}`
-                );
-                continue;
+              if (!t.tokenDecimal) {
+                let contract = await vm.GET_CONTRACT(t.contractAddress);
+                if (!contract && !contract.error) {
+                  vm.log(
+                    `ERROR: can not get contract info of ${t.contractAddress}`
+                  );
+                  continue;
+                }
+                t.tokenDecimal = contract.decimal;
+                t.tokenSymbol = contract.symbol;
               }
-              t.tokenDecimal = contract.decimal;
-              t.tokenSymbol = contract.symbol;
+              // fill price
+              let price = await vm.GET_PRICE_BY_SYMBOL(t.tokenSymbol);
+              if (price) {
+                t.price = price.usd;
+              } else {
+                vm.log(`ERROR: could not get market price of ${t.tokenSymbol}`);
+              }
             }
             let items = vm.convertToItems(result);
             // notify

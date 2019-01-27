@@ -1,58 +1,59 @@
 <template>
   <v-container>
-    <v-layout
-      text-xs-center
-      wrap>
+    <v-layout text-xs-center wrap>
       <v-checkbox
         d-inline-block
         small
         label="Pause"
         @click="pauseClicked"
-        v-model="isPaused">
+        v-model="isPaused"
+      >
       </v-checkbox>
-      <v-checkbox
-        d-inline-block
-        small
-        label="IN only"
-        v-model="inOnly">
+      <v-checkbox d-inline-block small label="IN only" v-model="inOnly">
       </v-checkbox>
-      <v-checkbox
-        d-inline-block
-        small
-        label="+ Only"
-        v-model="plusDifOnly">
+      <v-checkbox d-inline-block small label="+ Only" v-model="plusDifOnly">
       </v-checkbox>
       <v-checkbox
         d-inline-block
         small
         label="Show console"
-        v-model="showConsole">
+        v-model="showConsole"
+      >
       </v-checkbox>
       <v-flex xs12>
         <v-data-table
           :headers="headers"
           :items="displayItems"
           :pagination.sync="pagination"
-          class="elevation-1">
+          class="elevation-1"
+        >
           <template slot="headers" slot-scope="props">
             <tr>
               <th
                 v-for="header in props.headers"
-                  :key="header.text"
-                  :class="['column sortable', pagination.descending ? 'desc' : 'asc', header.value === pagination.sortBy ? 'active' : '', 'text-xs-left']"
-                  @click="changeSort(header.value)">
-                 <template v-if="header.value === 'symbol'">
+                :key="header.text"
+                :class="[
+                  'column sortable',
+                  pagination.descending ? 'desc' : 'asc',
+                  header.value === pagination.sortBy ? 'active' : '',
+                  'text-xs-left'
+                ]"
+                @click="changeSort(header.value)"
+              >
+                <template v-if="header.value === 'symbol'">
                   <v-progress-circular
                     indeterminate
-                    size=24
+                    size="24"
                     v-if="isLoading"
-                    color="green">
+                    color="green"
+                  >
                   </v-progress-circular>
                   <v-progress-circular
                     v-else
-                    size=24
-                    value=100
-                    color="#686868">
+                    size="24"
+                    value="100"
+                    color="#686868"
+                  >
                   </v-progress-circular>
                 </template>
                 <v-icon small>mdi-arrow-up</v-icon>
@@ -62,12 +63,22 @@
           </template>
           <template slot="items" slot-scope="props">
             <tr :key="props.index">
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.symbol }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.amount }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.value ? "$" + props.item.value : "?" }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.dif }}</td>
               <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
-                <a @click="openTx(props.item.txHash)">{{props.item.txHash.substring(0,13)}}...</a>
+                {{ props.item.symbol }}
+              </td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                {{ props.item.amount }}
+              </td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                {{ props.item.value ? "$" + props.item.value : "?" }}
+              </td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                {{ props.item.dif }}
+              </td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                <a @click="openTx(props.item.txHash)"
+                  >{{ props.item.txHash.substring(0, 13) }}...</a
+                >
               </td>
 
               <td v-if="props.item.direction === 'IN'">
@@ -77,8 +88,12 @@
                 <v-chip small color="red" text-color="white">OUT</v-chip>
               </td>
 
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.timeStamp }}</td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">{{ props.item.elapsedMinute }}m ago</td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                {{ props.item.timeStamp }}
+              </td>
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+                {{ props.item.elapsedMinute }}m ago
+              </td>
             </tr>
           </template>
         </v-data-table>
@@ -94,9 +109,15 @@
           background-color="green"
           height="400px"
           color="gray"
-          :value="consoleContent">
+          :value="consoleContent"
+        >
         </v-textarea>
-        <v-btn v-show="showConsole" color="secondary" @click="consoleContent = ''">Clear</v-btn>
+        <v-btn
+          v-show="showConsole"
+          color="secondary"
+          @click="consoleContent = ''"
+          >Clear</v-btn
+        >
       </v-flex>
     </v-layout>
   </v-container>
@@ -118,12 +139,10 @@ export default {
   computed: {
     ...mapGetters([
       "txInterval",
-      "ratesInterval",
       "minValue",
       "isConfigValid",
       "walletAddress",
       "maxBlockHeight",
-      "masterRates",
       "running",
       "loading",
       "lastLog",
@@ -131,7 +150,7 @@ export default {
     ]),
     isLoading() {
       // app loading
-      if(this.loading) return true;
+      if (this.loading) return true;
       //view loading
       return this.localLoading;
     },
@@ -141,7 +160,7 @@ export default {
         .filter(i => (this.inOnly ? i.direction === "IN" : true));
       items.forEach(i => {
         i.dif = (i.value - this.minValue).toFixed(3);
-        i.elapsedMinute = this.elapsedMinute(i.tick)
+        i.elapsedMinute = this.elapsedMinute(i.tick);
       });
       items = items.filter(i => (this.plusDifOnly ? i.dif > 0 : true));
       return items;
@@ -183,10 +202,11 @@ export default {
   },
   methods: {
     ...mapActions([
-      "REFRESH_MASTER_RATES",
+      "REFRESH_COIN_LIST",
       "REFRESH_MAX_BLOCK_HEIGHT",
       "GET_TX",
       "GET_CONTRACT",
+      "GET_PRICE_BY_SYMBOL",
       "RUNNING",
       "ALERT"
     ]),
@@ -197,6 +217,7 @@ export default {
           amount: t.tokenDecimal
             ? (t.value / Math.pow(10, t.tokenDecimal)).toFixed(3)
             : "N/A",
+          price: t.price,
           value: 0,
           dif: 0,
           txHash: t.hash,
@@ -205,16 +226,9 @@ export default {
           elapsedMinute: 0,
           direction: this.walletAddress === t.to ? "IN" : "OUT"
         };
-        if (!isNaN(item.amount)) {
-          // calculate value of this tx
-          let marketInfo = this.masterRates.find(
-            mr => mr.symbol.toUpperCase() === item.symbol.toUpperCase()
-          );
-          if (!marketInfo) {
-            this.log(`ERROR: can not get market info of ${item.symbol}`);
-            return item;
-          }
-          item.value = (item.amount * marketInfo.current_price).toFixed(3);
+        // calculate value if possible
+        if (item.amount !== 0 && item.price !== 0) {
+          item.value = (item.amount * item.price).toFixed(3);
         }
         return item;
       });
@@ -264,7 +278,7 @@ export default {
     timeStampToDateString(timeStamp) {
       return new Date(timeStamp * 1000).toLocaleString();
     },
-    changeSort (column) {
+    changeSort(column) {
       if (this.pagination.sortBy === column) {
         this.pagination.descending = !this.pagination.descending;
       } else {

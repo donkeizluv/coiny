@@ -1,12 +1,14 @@
 <template>
   <v-app dark>
-    <v-snackbar :timeout="5000"
-        top
-        multi-line
-        :color="snackType"
-        v-model="snackbar">
-        {{ snackMessage }}
-        <v-btn flat @click.native="snackbar = false">X</v-btn>
+    <v-snackbar
+      :timeout="5000"
+      top
+      multi-line
+      :color="snackType"
+      v-model="snackbar"
+    >
+      {{ snackMessage }}
+      <v-btn flat @click.native="snackbar = false">X</v-btn>
     </v-snackbar>
     <!-- <v-dialog v-model="blockingDialog" persistent max-width="290">
       <v-btn slot="activator" color="primary" dark>Open Dialog</v-btn>
@@ -29,14 +31,16 @@
     </v-toolbar>
 
     <v-content>
-       <v-fade-transition mode='out-in'>
-         <keep-alive>
-           <view :is="currentView"
-              @error="showError"
-              @info="showInfo"
-              @success="showSuccess"></view>
-         </keep-alive>
-        </v-fade-transition>
+      <v-fade-transition mode="out-in">
+        <keep-alive>
+          <view
+            :is="currentView"
+            @error="showError"
+            @info="showInfo"
+            @success="showSuccess"
+          ></view>
+        </keep-alive>
+      </v-fade-transition>
     </v-content>
   </v-app>
 </template>
@@ -57,7 +61,6 @@ export default {
     if (this.isConfigValid) {
       this.currentView = "TxView";
     }
-
   },
   computed: {
     ...mapGetters(["isConfigValid"])

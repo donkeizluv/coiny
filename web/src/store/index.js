@@ -6,7 +6,8 @@ import Axios from "axios";
 
 Vue.use(Vuex);
 const configStoreName = "coiny_config";
-const masterRatesStoreName = "coiny_rates";
+// const masterRatesStoreName = "coiny_rates";
+const coinListStoreName = "coin_list";
 const tokenInfoStoreName = "coiny_tokenInfo";
 
 export default new Vuex.Store({
@@ -16,16 +17,18 @@ export default new Vuex.Store({
     lastError: null,
     lastLog: null,
     isConfigValid: false,
-    masterRates: null,
+    // masterRates: null,
+    coinList: [],
     // config
     apiKey: null,
     walletAddress: null,
     txInterval: null,
-    ratesInterval: null,
+    coinListInterval: null,
     minValue: null,
     // api
-    masterPriceApi:
-      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd",
+    coinListApi: "https://api.coingecko.com/api/v3/coins/list",
+    getPriceApi:
+      "https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd",
     blockHeightApi:
       "https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={key}",
     txByAddressApi:
@@ -41,14 +44,16 @@ export default new Vuex.Store({
     lastError: s => s.lastError,
     lastLog: s => s.lastLog,
     isConfigValid: s => s.isConfigValid,
-    masterRates: s => s.masterRates,
+    coinList: s => s.coinList,
     txInterval: s => s.txInterval || 999,
     minValue: s => s.minValue,
-    ratesInterval: s => s.ratesInterval || 2222,
+    coinListInterval: s => s.coinListInterval || 120000,
     apiKey: s => s.apiKey,
     walletAddress: s => s.walletAddress,
     maxBlockHeight: s => s.maxBlockHeight,
-    masterPriceApi: s => s.masterPriceApi,
+    // masterPriceApi: s => s.masterPriceApi,
+    getPriceApi: s => s.getPriceApi,
+    coinListApi: s => s.coinListApi,
     blockHeightApi: s => s.blockHeightApi,
     txByAddressApi: s => s.txByAddressApi,
     readContractApi: s => s.readContractApi,
@@ -64,12 +69,12 @@ export default new Vuex.Store({
     CONFIG: (s, v) => {
       s.apiKey = v.apiKey;
       s.txInterval = v.txInterval;
-      s.ratesInterval = v.ratesInterval;
+      s.coinListInterval = v.coinListInterval;
       s.minValue = v.minValue;
       s.walletAddress = v.walletAddress;
     },
-    MASTER_RATES: (s, v) => {
-      s.masterRates = v;
+    COIN_LIST: (s, v) => {
+      s.coinList = v;
     },
     MAX_BLOCK_HEIGHT: (s, v) => {
       s.maxBlockHeight = v;
@@ -88,43 +93,62 @@ export default new Vuex.Store({
     RUNNING: ({ commit }, p) => {
       commit("RUNNING", p);
     },
-    REFRESH_MASTER_RATES: async ({ commit, state, dispatch }) => {
-      let cachedRates = localStorage.getItem(masterRatesStoreName);
-      if (cachedRates) {
-        let rates = JSON.parse(cachedRates);
-        if (rates.age + state.ratesInterval > Date.now()) {
+    REFRESH_COIN_LIST: async ({ commit, getters, dispatch }) => {
+      let cachedCoins = localStorage.getItem(coinListStoreName);
+      if (cachedCoins) {
+        let coins = JSON.parse(cachedCoins);
+        if (coins.age + getters.coinListInterval > Date.now()) {
           // still good
-          commit("MASTER_RATES", rates.data);
+          commit("COIN_LIST", coins.data);
         } else {
           // stale, fetch new
-          rates = await dispatch("FETCH_MASTER_RATES");
-          dispatch("CACHE_MASTER_RATES", rates);
-          commit("MASTER_RATES", rates);
+          coins = await dispatch("FETCH_COIN_LIST");
+          dispatch("CACHE_COIN_LIST", coins);
+          commit("COIN_LIST", coins);
         }
       } else {
-        let rates = await dispatch("FETCH_MASTER_RATES");
-        dispatch("CACHE_MASTER_RATES", rates);
-        commit("MASTER_RATES", rates);
+        let coins = await dispatch("FETCH_COIN_LIST");
+        dispatch("CACHE_COIN_LIST", coins);
+        commit("COIN_LIST", coins);
       }
     },
-    CACHE_MASTER_RATES: (s, p) => {
+    CACHE_COIN_LIST: (s, p) => {
       // console.log("master_rates: cache new rates...");
       localStorage.setItem(
-        masterRatesStoreName,
+        coinListStoreName,
         JSON.stringify({
           age: Date.now(),
           data: p
         })
       );
     },
-    FETCH_MASTER_RATES: async ({ state }) => {
-      state.lastLog = "Refreshing master rates";
-      let { data } = await Axios.get(state.masterPriceApi);
+    FETCH_COIN_LIST: async ({ state }) => {
+      state.lastLog = "Downloading coin list";
+      let { data } = await Axios.get(state.coinListApi);
       return data;
     },
-    REFRESH_MAX_BLOCK_HEIGHT: async ({ commit, state }) => {
+    // TODO: cache this
+    GET_PRICE_BY_SYMBOL: async ({ state }, p) => {
+      if (!p) return null;
+      let coin = state.coinList.find(
+        c => c.symbol.toUpperCase() === p.toUpperCase()
+      );
+      // console.log(coin);
+      // could not get coin info
+      if (!coin) {
+        state.lastLog = `Could not id of symbol: ${p}`;
+        return null;
+      }
       let { data } = await Axios.get(
-        state.blockHeightApi.replace("{key}", state.apiKey)
+        state.getPriceApi.replace("{ids}", coin.id)
+      );
+      // console.log(data);
+      if (data.hasOwnProperty(coin.id)) return data[coin.id];
+      return null;
+    },
+    REFRESH_MAX_BLOCK_HEIGHT: async ({ commit, getters }) => {
+      let { data } = await Axios.get(
+        getters.blockHeightApi.replace("{key}", getters.apiKey)
       );
       let newHeight = parseInt(data.result, 16);
 
@@ -132,7 +156,7 @@ export default new Vuex.Store({
       // if (!state.minBlockHeight) {
       //   commit("MIN_BLOCK_HEIGHT", newHeight);
       // }
-      if (state.maxBlockHeight != newHeight) {
+      if (getters.maxBlockHeight != newHeight) {
         // commit change
         commit("MAX_BLOCK_HEIGHT", newHeight);
         return true;
@@ -220,7 +244,7 @@ export default new Vuex.Store({
       state.apiKey = "NF1F9V7CVRW69M9G51SEZXB2DYCR387VZ4";
       state.walletAddress = "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208";
       state.txInterval = 6666;
-      state.ratesInterval = 10000;
+      state.coinListInterval = 120000;
       state.minValue = 5000;
       state.isConfigValid = true;
       state.lastLog = "Loaded default config";
