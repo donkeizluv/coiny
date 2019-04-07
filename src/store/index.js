@@ -6,11 +6,11 @@ import Axios from "axios";
 
 Vue.use(Vuex);
 const configStoreName = "coiny_config";
-// const masterRatesStoreName = "coiny_rates";
 const coinListStoreName = "coin_list";
 const tokenInfoStoreName = "coiny_tokenInfo";
 
 export default new Vuex.Store({
+  strict: true,
   state: {
     loading: false,
     running: false,
