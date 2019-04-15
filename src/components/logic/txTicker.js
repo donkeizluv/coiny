@@ -8,16 +8,21 @@ export default {
   //TODO: vm as an interface
   start(vm) {
     this.stopTicker = false;
-    const tick = delay => {
+    const tick = (delay, callback) => {
       setTimeout(async () => {
         if (this.stopTicker) {
           vm.log("Stopping...");
           // kill this closure
-          vm.RUNNING(false);
+          vm.isRunning = false;
           return;
         }
         if (vm.isPaused) {
-          tick(vm.txInterval);
+          // sleep
+          if (callback) callback();
+          tick(vm.txInterval, () => {
+            // vm.log("Pausing...");
+          });
+          return;
         }
         if (vm.isConfigValid) {
           // vm.log("Start polling");
@@ -68,9 +73,9 @@ export default {
             }
             let items = vm.convertToItems(result);
             // notify
-            items.forEach(i => {
-              if (i.value > vm.minValue) vm.ALERT(i);
-            });
+            // items.forEach(i => {
+            //   if (i.value > vm.minValue) vm.ALERT(i);
+            // });
             vm.items.push(...items);
             vm.localLoading = false;
           }
@@ -78,7 +83,10 @@ export default {
           vm.log("Invalid config");
         }
         //sleep
-        tick(vm.txInterval);
+        tick(vm.txInterval, () => {
+          // vm.log("Done routine...");
+        });
+        if (callback) callback();
       }, delay);
     };
     tick(0);

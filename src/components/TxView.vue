@@ -1,25 +1,30 @@
 <template>
   <v-container>
-    <v-layout text-xs-center wrap>
+    <v-layout row wrap>
       <v-checkbox
         d-inline-block
         small
         label="Pause"
-        @click="pauseClicked"
         v-model="isPaused"
-      >
-      </v-checkbox>
-      <v-checkbox d-inline-block small label="IN only" v-model="inOnly">
-      </v-checkbox>
-      <v-checkbox d-inline-block small label="+ Only" v-model="plusDifOnly">
-      </v-checkbox>
+      ></v-checkbox>
+      <v-checkbox
+        d-inline-block
+        small
+        label="IN only"
+        v-model="inOnly"
+      ></v-checkbox>
+      <v-checkbox
+        d-inline-block
+        small
+        label="+ Only"
+        v-model="plusDifOnly"
+      ></v-checkbox>
       <v-checkbox
         d-inline-block
         small
         label="Show console"
         v-model="showConsole"
-      >
-      </v-checkbox>
+      ></v-checkbox>
       <v-flex xs12>
         <v-data-table
           :headers="headers"
@@ -35,8 +40,7 @@
                 :class="[
                   'column sortable',
                   pagination.descending ? 'desc' : 'asc',
-                  header.value === pagination.sortBy ? 'active' : '',
-                  'text-xs-left'
+                  header.value === pagination.sortBy ? 'active' : ''
                 ]"
                 @click="changeSort(header.value)"
               >
@@ -46,15 +50,13 @@
                     size="24"
                     v-if="isLoading"
                     color="green"
-                  >
-                  </v-progress-circular>
+                  ></v-progress-circular>
                   <v-progress-circular
                     v-else
                     size="24"
                     value="100"
                     color="#686868"
-                  >
-                  </v-progress-circular>
+                  ></v-progress-circular>
                 </template>
                 <v-icon small>mdi-arrow-up</v-icon>
                 {{ header.text }}
@@ -63,42 +65,42 @@
           </template>
           <template slot="items" slot-scope="props">
             <tr :key="props.index">
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.symbol }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.amount }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.value ? "$" + props.item.value : "?" }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.dif }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 <a @click="openTx(props.item.txHash)"
                   >{{ props.item.txHash.substring(0, 13) }}...</a
                 >
               </td>
 
-              <td v-if="props.item.direction === 'IN'">
+              <td v-if="props.item.direction === 'IN'" class="text-xs-center">
                 <v-chip small color="green" text-color="white">IN</v-chip>
               </td>
-              <td v-else>
+              <td v-else class="text-xs-center">
                 <v-chip small color="red" text-color="white">OUT</v-chip>
               </td>
 
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.timeStamp }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0']">
+              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
                 {{ props.item.elapsedMinute }}m ago
               </td>
             </tr>
           </template>
         </v-data-table>
       </v-flex>
-      <v-flex align-content-end xs12>
+      <v-flex xs12>
         <v-textarea
           v-show="showConsole"
           label="Console"
@@ -110,14 +112,18 @@
           height="400px"
           color="gray"
           :value="consoleContent"
-        >
-        </v-textarea>
+        ></v-textarea>
+        
+      </v-flex>
+      <v-flex text-xs-right xs12>
         <v-btn
-          v-show="showConsole"
           color="secondary"
+          v-show="showConsole"
           @click="consoleContent = ''"
           >Clear</v-btn
         >
+        <v-btn v-show="isDebug" flat small @click="addFakeTx">Add fake tx</v-btn>
+        <!-- debug control -->
       </v-flex>
     </v-layout>
   </v-container>
@@ -143,10 +149,11 @@ export default {
       "isConfigValid",
       "walletAddress",
       "maxBlockHeight",
-      "running",
+      // "running",
       "loading",
       "lastLog",
-      "openTxUrl"
+      "openTxUrl",
+      "isDebug"
     ]),
     isLoading() {
       // app loading
@@ -169,11 +176,16 @@ export default {
   watch: {
     lastLog(log) {
       this.log(log);
+    },
+    isPaused(value) {
+      if (value) this.log("Pause...");
+      else this.log("Resume...");
     }
   },
   data() {
     return {
       localLoading: false,
+      isRunning: false,
       isPaused: false,
       consoleContent: "",
       inOnly: false,
@@ -183,8 +195,8 @@ export default {
         { text: "Symbol", value: "symbol" },
         { text: "Amount", value: "amount" },
         { text: "$", value: "value" },
-        { text: "Dif", value: "dif" },
-        { text: "Tx", value: "txHash", sortable: false },
+        { text: "Dif.", value: "dif" },
+        { text: "Tx.", value: "txHash", sortable: false },
         { text: "Direction", value: "direction" },
         { text: "Time", value: "timeStamp" },
         { text: "Elapsed", value: "elapsedMinute" }
@@ -207,8 +219,8 @@ export default {
       "GET_TX",
       "GET_CONTRACT",
       "GET_PRICE_BY_SYMBOL",
-      "RUNNING",
-      "ALERT"
+      // "RUNNING"
+      // "ALERT"
     ]),
     convertToItems(raw) {
       return raw.map(t => {
@@ -251,8 +263,8 @@ export default {
       };
     },
     start() {
-      if (this.running) return;
-      this.RUNNING(true);
+      if (this.isRunning) return;
+      this.isRunning = true;
       this.log("Starting...");
       Ticker.start(this);
       this.log("Started sucessfully");
@@ -265,13 +277,13 @@ export default {
     openTx(hash) {
       window.open(this.openTxUrl.replace("{hash}", hash));
     },
-    pauseClicked() {
-      if (this.isPaused) {
-        this.log("Pause...");
-        return;
-      }
-      this.log("Resume...");
-    },
+    // onPauseClick() {
+    //   if (this.isPaused) {
+    //     this.log("Resume...");
+    //     return;
+    //   }
+    //   this.log("Pause...");
+    // },
     txLink(hash) {
       return this.openTxUrl.replace("{hash}", hash);
     },
@@ -289,6 +301,21 @@ export default {
     elapsedMinute(timeStamp) {
       let diff = Math.abs(Date.now() - timeStamp * 1000);
       return Math.floor(diff / 60000);
+    },
+    addFakeTx(){
+      this.items.push({
+        symbol: "BKX",
+        amount: "50.178",
+        price: 0.02511477,
+        value: "1.260",
+        dif: "-4998.740",
+        txHash:
+          "0x18700c4775ef54e2bf6e9b48e519e6b0c4244b85299ec27403acdee3558ced1c",
+        tick: "1555263478",
+        timeStamp: "4/15/2019, 12:37:58 AM",
+        elapsedMinute: 2,
+        direction: "IN"
+      });
     }
   }
 };
