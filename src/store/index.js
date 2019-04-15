@@ -44,8 +44,8 @@ export default new Vuex.Store({
       "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
     openTxUrl: "https://etherscan.io/tx/{hash}",
     maxBlockHeight: 0,
-    proxyPath: "http://localhost:3000/p",
-    // proxyPath: "/p",
+    // proxyPath: "http://localhost:3000/p",
+    proxyPath: "/p",
     proxyPathQuery: "url"
   },
   getters: {
