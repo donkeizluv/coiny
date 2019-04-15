@@ -239,11 +239,7 @@ export default {
         up: alarmValue > rate,
         trend: 0
       };
-      if (sym.up) {
-        sym.dif = (sym.alarm / rate) * 100;
-      } else {
-        sym.dif = (sym.alarm / rate) * 100 - 100;
-      }
+      sym.dif = (sym.alarm / rate) * 100 - 100;
       return sym;
     },
     changeSort(column) {

@@ -42,11 +42,7 @@ export default {
             sym.trend = rate > sym.price ? 1 : rate.price == sym.price ? 0 : -1;
             // update
             sym.price = rate;
-            if (sym.up) {
-              sym.dif = (sym.alarm / rate) * 100;
-            } else {
-              sym.dif = (sym.alarm / rate) * 100 - 100;
-            }
+            sym.dif = (sym.alarm / rate) * 100 - 100;
             // sound the alarm
             vm.soundAlarm(sym);
           }
