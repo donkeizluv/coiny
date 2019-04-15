@@ -65,19 +65,44 @@
           </template>
           <template slot="items" slot-scope="props">
             <tr :key="props.index">
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.symbol }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.amount }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.value ? "$" + props.item.value : "?" }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.dif }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 <a @click="openTx(props.item.txHash)"
                   >{{ props.item.txHash.substring(0, 13) }}...</a
                 >
@@ -90,10 +115,20 @@
                 <v-chip small color="red" text-color="white">OUT</v-chip>
               </td>
 
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.timeStamp }}
               </td>
-              <td :class="[props.item.dif > 0 ? 'match1' : 'match0', 'text-xs-center']">
+              <td
+                :class="[
+                  props.item.dif > 0 ? 'match1' : 'match0',
+                  'text-xs-center'
+                ]"
+              >
                 {{ props.item.elapsedMinute }}m ago
               </td>
             </tr>
@@ -113,7 +148,6 @@
           color="gray"
           :value="consoleContent"
         ></v-textarea>
-        
       </v-flex>
       <v-flex text-xs-right xs12>
         <v-btn
@@ -122,7 +156,9 @@
           @click="consoleContent = ''"
           >Clear</v-btn
         >
-        <v-btn v-show="isDebug" flat small @click="addFakeTx">Add fake tx</v-btn>
+        <v-btn v-show="isDebug" flat small @click="addFakeTx"
+          >Add fake tx</v-btn
+        >
         <!-- debug control -->
       </v-flex>
     </v-layout>
@@ -218,7 +254,7 @@ export default {
       "REFRESH_MAX_BLOCK_HEIGHT",
       "GET_TX",
       "GET_CONTRACT",
-      "GET_PRICE_BY_SYMBOL",
+      "GET_PRICE_BY_SYMBOL"
       // "RUNNING"
       // "ALERT"
     ]),
@@ -302,7 +338,7 @@ export default {
       let diff = Math.abs(Date.now() - timeStamp * 1000);
       return Math.floor(diff / 60000);
     },
-    addFakeTx(){
+    addFakeTx() {
       this.items.push({
         symbol: "BKX",
         amount: "50.178",

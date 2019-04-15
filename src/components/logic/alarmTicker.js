@@ -53,7 +53,7 @@ export default {
           // done
           vm.isLoading = false;
         } else {
-        //   vm.log("Invalid config");
+          //   vm.log("Invalid config");
         }
         //sleep
         tick(vm.tickRate, () => {

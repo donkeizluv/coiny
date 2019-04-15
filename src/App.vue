@@ -4,20 +4,28 @@
       {{ snackMessage }}
       <v-btn flat @click.native="snackbar = false">X</v-btn>
     </v-snackbar>
-    <v-dialog value="true" v-if="showAlarm" scrollable persistent max-width="600">
+    <v-dialog
+      value="true"
+      v-if="showAlarm"
+      scrollable
+      persistent
+      max-width="600"
+    >
       <v-card>
         <v-card-title class="headline">ALARM</v-card-title>
         <v-container fluid grid-list-md pa-2>
           <v-layout row wrap>
             <v-flex xs12 v-for="(item, index) in alarms" :key="index">
-              <v-chip small color="grey">{{item.symbol}}</v-chip>
-              <v-chip small color="orange">{{item.price}}</v-chip>
+              <v-chip small color="grey">{{ item.symbol }}</v-chip>
+              <v-chip small color="orange">{{ item.price }}</v-chip>
               <v-chip v-if="item.up" small color="green">UP</v-chip>
               <v-chip v-else small color="red">DOWN</v-chip>
-              {{item.at}}
+              {{ item.at }}
             </v-flex>
             <v-flex xs12 class="text-xs-center">
-              <v-btn small color="primary" @click="clearAlarms" dark>Clear</v-btn>
+              <v-btn small color="primary" @click="clearAlarms" dark
+                >Clear</v-btn
+              >
             </v-flex>
           </v-layout>
         </v-container>
@@ -40,7 +48,11 @@
       >
         <span class="mr-2">Alarm</span>
       </v-btn>
-      <v-btn flat :color="currentView === 'TxView' ? 'green' : ''" @click="currentView = 'TxView'">
+      <v-btn
+        flat
+        :color="currentView === 'TxView' ? 'green' : ''"
+        @click="currentView = 'TxView'"
+      >
         <span class="mr-2">Tx Watcher</span>
       </v-btn>
       <v-btn
@@ -55,7 +67,13 @@
     <v-content>
       <v-fade-transition mode="out-in">
         <keep-alive>
-          <view ref="view" :is="currentView" @error="showError" @info="showInfo" @success="showSuccess"></view>
+          <view
+            ref="view"
+            :is="currentView"
+            @error="showError"
+            @info="showInfo"
+            @success="showSuccess"
+          ></view>
         </keep-alive>
       </v-fade-transition>
     </v-content>
@@ -86,7 +104,7 @@ export default {
   },
   watch: {
     alarms(a) {
-      if(a.length > 0) alarmAudio.play();
+      if (a.length > 0) alarmAudio.play();
     }
   },
   computed: {

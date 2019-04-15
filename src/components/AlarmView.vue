@@ -61,32 +61,61 @@
               <tr :key="props.index">
                 <td class="text-xs-center">{{ props.item.symbol }}</td>
                 <td class="text-xs-center">
-                  <v-icon class="small-icon" color="green" v-if="props.item.trend === 1">
+                  <v-icon
+                    class="small-icon"
+                    color="green"
+                    v-if="props.item.trend === 1"
+                  >
                     mdi-arrow-up-bold
                   </v-icon>
-                  <v-icon class="small-icon" color="red" v-if="props.item.trend === -1">
+                  <v-icon
+                    class="small-icon"
+                    color="red"
+                    v-if="props.item.trend === -1"
+                  >
                     mdi-arrow-down-bold
                   </v-icon>
-                  {{ props.item.price }}</td>
+                  {{ props.item.price }}
+                </td>
                 <td class="text-xs-center">{{ props.item.alarm }}</td>
                 <td class="text-xs-center">
-                  <v-chip v-if="props.item.up" small color="green" text-color="white">
+                  <v-chip
+                    v-if="props.item.up"
+                    small
+                    color="green"
+                    text-color="white"
+                  >
                     UP
                   </v-chip>
                   <v-chip v-else small color="red" text-color="white">
                     DOWN
                   </v-chip>
                 </td>
-                <td class="text-xs-center">{{ (new Number(props.item.dif)).toPrecision(4) }}%</td>
-                <td class="text-xs-center">{{ props.item.set ? 'Yes' : 'No'}}</td>
+                <td class="text-xs-center">
+                  {{ new Number(props.item.dif).toPrecision(4) }}%
+                </td>
+                <td class="text-xs-center">
+                  {{ props.item.set ? "Yes" : "No" }}
+                </td>
                 <td class="text-xs-center">
                   <!-- <v-btn small icon color="green darken-1" @click="onEditSymbolClick(props.item)">
                     <v-icon class="small-icon">mdi-pencil</v-icon>
                   </v-btn> -->
-                  <v-btn small icon color="orange" :disabled="!props.item.set" @click="onSetSymbolClick(props.item)">
+                  <v-btn
+                    small
+                    icon
+                    color="orange"
+                    :disabled="!props.item.set"
+                    @click="onSetSymbolClick(props.item)"
+                  >
                     <v-icon class="small-icon">mdi-alarm-plus</v-icon>
                   </v-btn>
-                  <v-btn small icon color="pink lighten-2" @click="onRemoveSymbolClick(props.item)">
+                  <v-btn
+                    small
+                    icon
+                    color="pink lighten-2"
+                    @click="onRemoveSymbolClick(props.item)"
+                  >
                     <v-icon class="small-icon">mdi-delete</v-icon>
                   </v-btn>
                 </td>
@@ -110,15 +139,14 @@ export default {
   beforeDestroy() {
     Ticker.stop();
   },
-  activated(){
+  activated() {
     this.isActivated = true;
     this.isPaused = false;
   },
-  deactivated(){
+  deactivated() {
     this.isActivated = false;
     // dont run in background if everything is set
-    if(this.symbols.every(s => s.set))
-      this.isPaused = true;
+    if (this.symbols.every(s => s.set)) this.isPaused = true;
   },
   data() {
     return {
@@ -140,7 +168,7 @@ export default {
           { text: "Type", sortable: true },
           { text: "Dif.", value: "dif", sortable: true },
           { text: "Set", value: "set", sortable: true },
-          { text: "Action", sortable: false },
+          { text: "Action", sortable: false }
         ],
         pagination: {
           sortBy: "dif",
@@ -155,14 +183,21 @@ export default {
     bSymbols() {
       return this.exchangeInfo.bSymbols.map(i => {
         let rate = this.getRate(i.symbol);
-        return { value: i.symbol, name: `${i.baseAsset}-${i.quoteAsset}  ${rate ? `(~${rate})` : '( - )'}` };
+        return {
+          value: i.symbol,
+          name: `${i.baseAsset}-${i.quoteAsset}  ${
+            rate ? `(~${rate})` : "( - )"
+          }`
+        };
       });
     },
     canAdd() {
-      return this.rates.length > 0 
-        && !isNaN(this.alarmValue) 
-        && this.alarmValue > 0 
-        && !this.symbols.some(s => s.symbol === this.selectedSymbol);
+      return (
+        this.rates.length > 0 &&
+        !isNaN(this.alarmValue) &&
+        this.alarmValue > 0 &&
+        !this.symbols.some(s => s.symbol === this.selectedSymbol)
+      );
     },
     tickRate() {
       return this.intervals.price.rate;
@@ -177,9 +212,9 @@ export default {
       Ticker.start(this);
       this.log("Started sucessfully");
     },
-    onEditSymbolClick(item) {
-      return;
-    },
+    // onEditSymbolClick(item) {
+    //   return;
+    // },
     onSetSymbolClick(item) {
       item.set = false;
     },
@@ -188,7 +223,9 @@ export default {
     },
     onAddClick() {
       if (!this.canAdd) return;
-      this.symbols.push(this.createSymbol(this.selectedSymbol, this.alarmValue));
+      this.symbols.push(
+        this.createSymbol(this.selectedSymbol, this.alarmValue)
+      );
       this.$emit("success", `Added ${this.selectedSymbol}`);
     },
     createSymbol(symbol, alarmValue) {
@@ -201,12 +238,11 @@ export default {
         set: false,
         up: alarmValue > rate,
         trend: 0
-      }
-      if(sym.up) {
+      };
+      if (sym.up) {
         sym.dif = (sym.alarm / rate) * 100;
-      }
-      else {
-        sym.dif =  (sym.alarm / rate) * 100 - 100;
+      } else {
+        sym.dif = (sym.alarm / rate) * 100 - 100;
       }
       return sym;
     },
@@ -218,16 +254,26 @@ export default {
         this.table.pagination.descending = false;
       }
     },
-    toPercentage(value){
+    toPercentage(value) {
       return Math.round(value * 100);
     },
     getRate(sym) {
-      return Number((this.rates.find(r => r.symbol === sym) || { price : 0 }).price);
+      return Number(
+        (this.rates.find(r => r.symbol === sym) || { price: 0 }).price
+      );
     },
     soundAlarm(sym) {
-      if(sym.set) return;
-      if((sym.up && sym.price >= sym.alarm) || (!sym.up && sym.price <= sym.alarm)){
-        this.ALARM({ symbol: sym.symbol, price: sym.price, up: sym.up, at: new Date().toLocaleTimeString() });
+      if (sym.set) return;
+      if (
+        (sym.up && sym.price >= sym.alarm) ||
+        (!sym.up && sym.price <= sym.alarm)
+      ) {
+        this.ALARM({
+          symbol: sym.symbol,
+          price: sym.price,
+          up: sym.up,
+          at: new Date().toLocaleTimeString()
+        });
         sym.set = true;
       }
       // if(sym.up){
@@ -244,7 +290,7 @@ export default {
       //   }
       // }
     },
-    log(m){
+    log(m) {
       return m;
     }
   }
