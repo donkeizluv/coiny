@@ -90,9 +90,12 @@ const alarmAudio = new Audio("asset/bell.mp3");
 export default {
   name: "App",
   components: {
-    TxView: () => import("./components/TxView"),
-    ConfigView: () => import("./components/ConfigView"),
-    AlarmView: () => import("./components/AlarmView")
+    TxView: () =>
+      import(/* webpackChunkName: "components" */ "./components/TxView"),
+    ConfigView: () =>
+      import(/* webpackChunkName: "components" */ "./components/ConfigView"),
+    AlarmView: () =>
+      import(/* webpackChunkName: "components" */ "./components/AlarmView")
   },
   async created() {
     await this.INIT();
