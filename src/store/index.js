@@ -18,6 +18,9 @@ export default new Vuex.Store({
     alarm
   },
   state: {
+    isProd: process.env.NODE_ENV === "production",
+    // use self or remote proxy
+    useSelfProxy: true,
     isDebug: false,
     loading: false,
     // running: false,
@@ -44,11 +47,12 @@ export default new Vuex.Store({
       "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
     openTxUrl: "https://etherscan.io/tx/{hash}",
     maxBlockHeight: 0,
-    // proxyPath: "http://localhost:3000/p",
-    proxyPath: "/p",
+    proxyPathRemote: "http://localhost:3000/p",
+    proxyPathSelf: "/p",
     proxyPathQuery: "url"
   },
   getters: {
+    isProd: s => s.isProd,
     isDebug: s => s.isDebug,
     loading: s => s.loading,
     // running: s => s.running,
@@ -71,7 +75,10 @@ export default new Vuex.Store({
     readContractApi: s => s.readContractApi,
     openTxUrl: s => s.openTxUrl,
     // return proxy path that is ready to use
-    proxyPath: s => `${s.proxyPath}?${s.proxyPathQuery}=`
+    proxyPath: s =>
+      `${s.useSelfProxy ? s.proxyPathSelf : s.proxyPathRemote}?${
+        s.proxyPathQuery
+      }=`
   },
   mutations: {
     LOADING: (s, v) => {

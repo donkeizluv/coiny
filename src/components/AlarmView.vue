@@ -9,6 +9,10 @@
                 <v-autocomplete
                   v-model="selectedSymbol"
                   :items="bSymbols"
+                  dense
+                  auto-select-first
+                  clearable
+                  no-data-text="no match"
                   label="B Symbols"
                   item-text="name"
                   item-value="value"
@@ -23,8 +27,18 @@
                   @keyup.enter="onAddClick"
                 ></v-text-field>
               </v-flex>
+              <v-flex xs1>
+                <v-radio-group v-model="upDownRd" class="ma-0" column>
+                  <v-radio color="red" selected label="Up" value="up"></v-radio>
+                  <v-radio color="green" label="Down" value="down"></v-radio>
+                </v-radio-group>
+              </v-flex>
               <v-flex xs2>
-                <v-btn :disabled="!canAdd" color="success" @click="onAddClick"
+                <v-btn
+                  :disabled="!canAdd"
+                  color="success"
+                  class="mt-3"
+                  @click="onAddClick"
                   >Add</v-btn
                 >
               </v-flex>
@@ -116,7 +130,7 @@
                     color="pink lighten-2"
                     @click="onRemoveSymbolClick(props.item)"
                   >
-                    <v-icon class="small-icon">mdi-delete</v-icon>
+                    <v-icon class="small-icon">mdi-close</v-icon>
                   </v-btn>
                 </td>
               </tr>
@@ -142,6 +156,7 @@ export default {
       isActivated: false,
       alarmValue: 0,
       selectedSymbol: null,
+      upDownRd: "up",
       symbols: [],
       rates: [],
       // trends: [],
@@ -156,7 +171,7 @@ export default {
           { text: "Action", sortable: false }
         ],
         pagination: {
-          sortBy: "dif",
+          sortBy: "symbol",
           descending: true
         }
       }
@@ -170,9 +185,7 @@ export default {
         let rate = this.getRate(i.symbol);
         return {
           value: i.symbol,
-          name: `${i.baseAsset}-${i.quoteAsset}  ${
-            rate ? `(~${rate})` : "( - )"
-          }`
+          name: `${i.baseAsset}${i.quoteAsset}  ${rate ? `(${rate})` : ""}`
         };
       });
     },
@@ -181,8 +194,13 @@ export default {
         this.rates.length > 0 &&
         !isNaN(this.alarmValue) &&
         this.alarmValue > 0 &&
-        !this.symbols.some(s => s.symbol === this.selectedSymbol)
+        !this.symbols.some(
+          s => s.symbol === this.selectedSymbol && s.up === this.isUpRd
+        )
       );
+    },
+    isUpRd() {
+      return this.upDownRd === "up";
     },
     tickRate() {
       return this.intervals.price.rate;
@@ -236,7 +254,7 @@ export default {
         alarm: Number(alarmValue),
         dif: 0,
         set: false,
-        up: alarmValue > rate,
+        up: this.isUpRd,
         trend: 0
       };
       sym.dif = (sym.alarm / rate) * 100 - 100;
@@ -272,19 +290,6 @@ export default {
         });
         sym.set = true;
       }
-      // if(sym.up){
-      //   if(sym.price >= sym.alarm){
-      //     // console.log(`Alarm up: ${sym.symbol}`);
-      //     this.ALARM(this.createAlarm(sym.symbol, sym.up));
-      //     sym.set = true;
-      //   }
-      // }else{
-      //   if(sym.price <= sym.alarm){
-      //     // console.log(`Alarm down: ${sym.symbol}`);
-      //     this.ALARM({ symbol: sym.symbol, up: false });
-      //     sym.set = true;
-      //   }
-      // }
     },
     log(m) {
       return m;
