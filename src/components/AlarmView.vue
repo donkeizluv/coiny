@@ -29,8 +29,13 @@
               </v-flex>
               <v-flex xs1>
                 <v-radio-group v-model="upDownRd" class="ma-0" column>
-                  <v-radio color="red" selected label="Up" value="up"></v-radio>
-                  <v-radio color="green" label="Down" value="down"></v-radio>
+                  <v-radio
+                    color="green"
+                    selected
+                    label="Up"
+                    value="up"
+                  ></v-radio>
+                  <v-radio color="red" label="Down" value="down"></v-radio>
                 </v-radio-group>
               </v-flex>
               <v-flex xs2>
