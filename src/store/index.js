@@ -20,7 +20,7 @@ export default new Vuex.Store({
   state: {
     isProd: process.env.NODE_ENV === "production",
     // use self or remote proxy
-    useSelfProxy: true,
+    useSelfProxy: !!process.env.SELF_PROXY,
     isDebug: false,
     loading: false,
     // running: false,
