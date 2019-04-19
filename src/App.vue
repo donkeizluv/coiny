@@ -1,12 +1,12 @@
 <template>
   <v-app dark>
-    <v-snackbar :timeout="5000" top :color="snackType" v-model="snackbar">
+    <v-snackbar v-model="snackbar" :timeout="5000" top :color="snackType">
       {{ snackMessage }}
       <v-btn flat @click.native="snackbar = false">X</v-btn>
     </v-snackbar>
     <v-dialog
-      value="true"
       v-if="showAlarm"
+      value="true"
       scrollable
       persistent
       max-width="600"
@@ -15,7 +15,7 @@
         <v-card-title class="headline">ALARM</v-card-title>
         <v-container fluid grid-list-md pa-2>
           <v-layout row wrap>
-            <v-flex xs12 v-for="(item, index) in alarms" :key="index">
+            <v-flex v-for="(item, index) in alarms" :key="index" xs12>
               <v-chip small color="grey">{{ item.symbol }}</v-chip>
               <v-chip small color="orange">{{ item.price }}</v-chip>
               <v-chip v-if="item.up" small color="green">UP</v-chip>
@@ -23,7 +23,7 @@
               {{ item.at }}
             </v-flex>
             <v-flex xs12 class="text-xs-center">
-              <v-btn small color="primary" @click="clearAlarms" dark
+              <v-btn small color="primary" dark @click="clearAlarms"
                 >Clear</v-btn
               >
             </v-flex>
@@ -68,8 +68,8 @@
       <v-fade-transition mode="out-in">
         <keep-alive>
           <view
-            ref="view"
             :is="currentView"
+            ref="view"
             @error="showError"
             @info="showInfo"
             @success="showSuccess"
@@ -94,26 +94,6 @@ export default {
     ConfigView: () => import("./components/ConfigView"),
     AlarmView: () => import("./components/AlarmView")
   },
-  async created() {
-    await this.INIT();
-    if (this.isConfigValid) {
-      // this.currentView = "TxView";
-      this.currentView = "AlarmView";
-    }
-    alarmAudio.loop = true;
-  },
-  watch: {
-    alarms(a) {
-      if (a.length > 0) alarmAudio.play();
-    }
-  },
-  computed: {
-    ...mapGetters(["isConfigValid"]),
-    ...mapGetters("alarm", ["alarms"]),
-    showAlarm() {
-      return this.alarms.length > 0;
-    }
-  },
   data() {
     return {
       alarmDialog: true,
@@ -122,6 +102,26 @@ export default {
       snackType: "info",
       currentView: "TxView"
     };
+  },
+  computed: {
+    ...mapGetters(["isConfigValid"]),
+    ...mapGetters("alarm", ["alarms"]),
+    showAlarm() {
+      return this.alarms.length > 0;
+    }
+  },
+  watch: {
+    alarms(a) {
+      if (a.length > 0) alarmAudio.play();
+    }
+  },
+  async created() {
+    await this.INIT();
+    if (this.isConfigValid) {
+      // this.currentView = "TxView";
+      this.currentView = "AlarmView";
+    }
+    alarmAudio.loop = true;
   },
   methods: {
     ...mapActions(["INIT", "REFRESH_MASTER_RATES", "REFRESH_MAX_BLOCK_HEIGHT"]),

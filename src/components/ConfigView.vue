@@ -8,10 +8,10 @@
             <v-layout wrap>
               <v-flex xs12>
                 <v-checkbox
+                  v-model="debugMode"
                   d-inline-block
                   small
                   label="Debug mode"
-                  v-model="debugMode"
                 ></v-checkbox>
               </v-flex>
             </v-layout>
@@ -32,13 +32,13 @@
               <v-flex xs12>
                 <v-btn
                   small
-                  @click="applyConfig"
                   :disabled="!isConfigValid"
                   color="success"
+                  @click="applyConfig"
                   >Apply</v-btn
                 >
-                <v-btn small @click="loadValues" color="info">Reload</v-btn>
-                <v-btn small @click="loadDefault" color="warning"
+                <v-btn small color="info" @click="loadValues">Reload</v-btn>
+                <v-btn small color="warning" @click="loadDefault"
                   >Default</v-btn
                 >
               </v-flex>
@@ -123,13 +123,13 @@
               <v-flex xs12>
                 <v-btn
                   small
-                  @click="applyConfig"
                   :disabled="!isConfigValid"
                   color="success"
+                  @click="applyConfig"
                   >Apply</v-btn
                 >
-                <v-btn small @click="loadValues" color="info">Reload</v-btn>
-                <v-btn small @click="loadDefault" color="warning"
+                <v-btn small color="info" @click="loadValues">Reload</v-btn>
+                <v-btn small color="warning" @click="loadDefault"
                   >Default</v-btn
                 >
               </v-flex>
@@ -145,15 +145,15 @@
 import { mapActions, mapGetters } from "vuex";
 
 export default {
-  mounted() {
-    this.loadValues();
-    this.init = true;
-    this.debugMode = this.isDebug;
-  },
-  watch: {
-    debugMode(value) {
-      this.SET_DEBUG(value);
-    }
+  data() {
+    return {
+      debugMode: false,
+      newApiKey: "",
+      newTxInterval: 0,
+      newMinValue: 0,
+      newWalletAddress: "",
+      newCoinListInterval: 0
+    };
   },
   computed: {
     ...mapGetters([
@@ -192,6 +192,16 @@ export default {
       return true;
     }
   },
+  watch: {
+    debugMode(value) {
+      this.SET_DEBUG(value);
+    }
+  },
+  mounted() {
+    this.loadValues();
+    this.init = true;
+    this.debugMode = this.isDebug;
+  },
   methods: {
     ...mapActions(["UPDATE_CONFIG", "LOAD_DEFAULT_CONFIG", "SET_DEBUG"]),
     loadValues() {
@@ -217,16 +227,6 @@ export default {
       this.LOAD_DEFAULT_CONFIG();
       this.loadValues();
     }
-  },
-  data() {
-    return {
-      debugMode: false,
-      newApiKey: "",
-      newTxInterval: 0,
-      newMinValue: 0,
-      newWalletAddress: "",
-      newCoinListInterval: 0
-    };
   }
 };
 </script>

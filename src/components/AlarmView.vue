@@ -8,23 +8,23 @@
               <v-flex xs4>
                 <v-autocomplete
                   v-model="selectedSymbol"
-                  @keyup.enter="onAddClick"
                   :items="bSymbols"
                   label="B Symbols"
                   item-text="name"
                   item-value="value"
+                  @keyup.enter="onAddClick"
                 ></v-autocomplete>
               </v-flex>
               <v-flex xs3>
                 <v-text-field
                   v-model="alarmValue"
-                  @keyup.enter="onAddClick"
                   type="number"
                   label="Alarm value"
+                  @keyup.enter="onAddClick"
                 ></v-text-field>
               </v-flex>
               <v-flex xs2>
-                <v-btn @click="onAddClick" :disabled="!canAdd" color="success"
+                <v-btn :disabled="!canAdd" color="success" @click="onAddClick"
                   >Add</v-btn
                 >
               </v-flex>
@@ -62,16 +62,16 @@
                 <td class="text-xs-center">{{ props.item.symbol }}</td>
                 <td class="text-xs-center">
                   <v-icon
+                    v-if="props.item.trend === 1"
                     class="small-icon"
                     color="green"
-                    v-if="props.item.trend === 1"
                   >
                     mdi-arrow-up-bold
                   </v-icon>
                   <v-icon
+                    v-if="props.item.trend === -1"
                     class="small-icon"
                     color="red"
-                    v-if="props.item.trend === -1"
                   >
                     mdi-arrow-down-bold
                   </v-icon>
@@ -133,21 +133,6 @@ import { mapActions, mapGetters } from "vuex";
 import Ticker from "./logic/alarmTicker";
 
 export default {
-  mounted() {
-    this.start();
-  },
-  beforeDestroy() {
-    Ticker.stop();
-  },
-  activated() {
-    this.isActivated = true;
-    this.isPaused = false;
-  },
-  deactivated() {
-    this.isActivated = false;
-    // dont run in background if everything is set
-    if (this.symbols.every(s => s.set)) this.isPaused = true;
-  },
   data() {
     return {
       isConfigValid: true,
@@ -202,6 +187,21 @@ export default {
     tickRate() {
       return this.intervals.price.rate;
     }
+  },
+  mounted() {
+    this.start();
+  },
+  beforeDestroy() {
+    Ticker.stop();
+  },
+  activated() {
+    this.isActivated = true;
+    this.isPaused = false;
+  },
+  deactivated() {
+    this.isActivated = false;
+    // dont run in background if everything is set
+    if (this.symbols.every(s => s.set)) this.isPaused = true;
   },
   methods: {
     ...mapActions("alarm", ["REFRESH_EXCHANGE_INFO", "GET_RATE", "ALARM"]),

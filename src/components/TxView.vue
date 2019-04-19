@@ -2,28 +2,28 @@
   <v-container>
     <v-layout row wrap>
       <v-checkbox
+        v-model="isPaused"
         d-inline-block
         small
         label="Pause"
-        v-model="isPaused"
       ></v-checkbox>
       <v-checkbox
+        v-model="inOnly"
         d-inline-block
         small
         label="IN only"
-        v-model="inOnly"
       ></v-checkbox>
       <v-checkbox
+        v-model="plusDifOnly"
         d-inline-block
         small
         label="+ Only"
-        v-model="plusDifOnly"
       ></v-checkbox>
       <v-checkbox
+        v-model="showConsole"
         d-inline-block
         small
         label="Show console"
-        v-model="showConsole"
       ></v-checkbox>
       <v-flex xs12>
         <v-data-table
@@ -46,9 +46,9 @@
               >
                 <template v-if="header.value === 'symbol'">
                   <v-progress-circular
+                    v-if="isLoading"
                     indeterminate
                     size="24"
-                    v-if="isLoading"
                     color="green"
                   ></v-progress-circular>
                   <v-progress-circular
@@ -151,8 +151,8 @@
       </v-flex>
       <v-flex text-xs-right xs12>
         <v-btn
-          color="secondary"
           v-show="showConsole"
+          color="secondary"
           @click="consoleContent = ''"
           >Clear</v-btn
         >
@@ -170,13 +170,35 @@ import { mapActions, mapGetters } from "vuex";
 import Ticker from "./logic/txTicker";
 
 export default {
-  mounted() {
-    // make sure only one loop is created
-    // looks like HMR is causing multiple call on this
-    this.start();
-  },
-  beforeDestroy() {
-    Ticker.stop();
+  data() {
+    return {
+      localLoading: false,
+      isRunning: false,
+      isPaused: false,
+      consoleContent: "",
+      inOnly: false,
+      showConsole: true,
+      plusDifOnly: false,
+      headers: [
+        { text: "Symbol", value: "symbol" },
+        { text: "Amount", value: "amount" },
+        { text: "$", value: "value" },
+        { text: "Dif.", value: "dif" },
+        { text: "Tx.", value: "txHash", sortable: false },
+        { text: "Direction", value: "direction" },
+        { text: "Time", value: "timeStamp" },
+        { text: "Elapsed", value: "elapsedMinute" }
+      ],
+      pagination: {
+        sortBy: "elapsedMinute",
+        descending: true
+      },
+      items: [],
+      // ticker setting
+      lastHeight: 0,
+      rescan: 6, //each number of blocks to do re-scan
+      lastRescan: 0
+    };
   },
   computed: {
     ...mapGetters([
@@ -218,35 +240,13 @@ export default {
       else this.log("Resume...");
     }
   },
-  data() {
-    return {
-      localLoading: false,
-      isRunning: false,
-      isPaused: false,
-      consoleContent: "",
-      inOnly: false,
-      showConsole: true,
-      plusDifOnly: false,
-      headers: [
-        { text: "Symbol", value: "symbol" },
-        { text: "Amount", value: "amount" },
-        { text: "$", value: "value" },
-        { text: "Dif.", value: "dif" },
-        { text: "Tx.", value: "txHash", sortable: false },
-        { text: "Direction", value: "direction" },
-        { text: "Time", value: "timeStamp" },
-        { text: "Elapsed", value: "elapsedMinute" }
-      ],
-      pagination: {
-        sortBy: "elapsedMinute",
-        descending: true
-      },
-      items: [],
-      // ticker setting
-      lastHeight: 0,
-      rescan: 6, //each number of blocks to do re-scan
-      lastRescan: 0
-    };
+  mounted() {
+    // make sure only one loop is created
+    // looks like HMR is causing multiple call on this
+    this.start();
+  },
+  beforeDestroy() {
+    Ticker.stop();
   },
   methods: {
     ...mapActions([
