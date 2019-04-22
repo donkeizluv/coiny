@@ -109,10 +109,14 @@
               </td>
 
               <td v-if="props.item.direction === 'IN'" class="text-xs-center">
-                <v-chip small color="green" text-color="white">IN</v-chip>
+                <v-chip outline label small color="green" text-color="white"
+                  >IN</v-chip
+                >
               </td>
               <td v-else class="text-xs-center">
-                <v-chip small color="red" text-color="white">OUT</v-chip>
+                <v-chip outline label small color="red" text-color="white"
+                  >OUT</v-chip
+                >
               </td>
 
               <td

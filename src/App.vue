@@ -73,6 +73,7 @@
             @error="showError"
             @info="showInfo"
             @success="showSuccess"
+            @notify="showNotify"
           ></view>
         </keep-alive>
       </v-fade-transition>
@@ -143,6 +144,18 @@ export default {
       this.snackbar = true;
       this.snackType = "info";
       this.snackMessage = mess;
+    },
+    showNotify(payload) {
+      let { title, message } = payload;
+      if (Notification.permission !== "granted")
+        Notification.requestPermission();
+      else {
+        new Notification(title, {
+          body: message
+        });
+        // notification.onclick = function() {
+        // };
+      }
     },
     clearAlarms() {
       alarmAudio.pause();

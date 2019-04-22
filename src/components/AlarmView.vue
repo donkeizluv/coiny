@@ -101,12 +101,21 @@
                   <v-chip
                     v-if="props.item.up"
                     small
+                    label
+                    outline
                     color="green"
                     text-color="white"
                   >
                     UP
                   </v-chip>
-                  <v-chip v-else small color="red" text-color="white">
+                  <v-chip
+                    v-else
+                    small
+                    label
+                    outline
+                    color="red"
+                    text-color="white"
+                  >
                     DOWN
                   </v-chip>
                 </td>
@@ -122,6 +131,7 @@
                   </v-btn> -->
                   <v-btn
                     small
+                    flat
                     icon
                     color="orange"
                     :disabled="!props.item.set"
@@ -131,6 +141,7 @@
                   </v-btn>
                   <v-btn
                     small
+                    flat
                     icon
                     color="pink lighten-2"
                     @click="onRemoveSymbolClick(props.item)"
@@ -294,6 +305,10 @@ export default {
           at: new Date().toLocaleTimeString()
         });
         sym.set = true;
+        this.$emit("notify", {
+          title: "Coiny",
+          message: `${sym.symbol}: ${sym.up ? "UP" : "DOWN"} to ${sym.price}`
+        });
       }
     },
     log(m) {
