@@ -19,6 +19,7 @@ export default new Vuex.Store({
   },
   state: {
     isProd: process.env.NODE_ENV === "production",
+    isAuthenticated: false,
     // use self or remote proxy
     useSelfProxy: !!process.env.SELF_PROXY,
     isDebug: false,
@@ -49,9 +50,12 @@ export default new Vuex.Store({
     maxBlockHeight: 0,
     proxyPathRemote: "http://localhost:3000/p",
     proxyPathSelf: "/p",
-    proxyPathQuery: "url"
+    proxyPathQuery: "url",
+    // infra
+    auth: "/auth"
   },
   getters: {
+    isAuthenticated: s => s.isAuthenticated,
     isProd: s => s.isProd,
     isDebug: s => s.isDebug,
     loading: s => s.loading,
@@ -78,9 +82,13 @@ export default new Vuex.Store({
     proxyPath: s =>
       `${s.useSelfProxy ? s.proxyPathSelf : s.proxyPathRemote}?${
         s.proxyPathQuery
-      }=`
+      }=`,
+    auth: s => s.auth
   },
   mutations: {
+    AUTHENTICATED: (s, v) => {
+      s.isAuthenticated = v;
+    },
     LOADING: (s, v) => {
       s.loading = v;
     },
@@ -300,6 +308,15 @@ export default new Vuex.Store({
     },
     SET_DEBUG: ({ commit }, p) => {
       commit("DEBUG", p);
+    },
+    LOGIN: async ({ commit, getters }, p) => {
+      try {
+        await Axios.post(getters.auth, { pwd: p });
+        commit("AUTHENTICATED", true);
+        return true;
+      } catch (error) {
+        return false;
+      }
     }
   }
 });

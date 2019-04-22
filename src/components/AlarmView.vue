@@ -137,7 +137,7 @@
                     :disabled="!props.item.set"
                     @click="onSetSymbolClick(props.item)"
                   >
-                    <v-icon class="small-icon">mdi-alarm-plus</v-icon>
+                    <v-icon>mdi-alarm-plus</v-icon>
                   </v-btn>
                   <v-btn
                     small
@@ -146,7 +146,7 @@
                     color="pink lighten-2"
                     @click="onRemoveSymbolClick(props.item)"
                   >
-                    <v-icon class="small-icon">mdi-close</v-icon>
+                    <v-icon>mdi-close</v-icon>
                   </v-btn>
                 </td>
               </tr>

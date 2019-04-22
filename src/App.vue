@@ -36,7 +36,7 @@
         <!-- <v-btn small color="primary" @click="clearAlarms" dark>Clear all</v-btn> -->
       </v-card>
     </v-dialog>
-    <v-toolbar app>
+    <v-toolbar v-if="isAuthenticated" app>
       <v-toolbar-title class="headline text-uppercase">
         <span>Coiny</span>
       </v-toolbar-title>
@@ -44,21 +44,21 @@
       <v-btn
         flat
         :color="currentView === 'AlarmView' ? 'green' : ''"
-        @click="currentView = 'AlarmView'"
+        @click="view = 'AlarmView'"
       >
         <span class="mr-2">Alarm</span>
       </v-btn>
       <v-btn
         flat
         :color="currentView === 'TxView' ? 'green' : ''"
-        @click="currentView = 'TxView'"
+        @click="view = 'TxView'"
       >
         <span class="mr-2">Tx Watcher</span>
       </v-btn>
       <v-btn
         flat
         :color="currentView === 'ConfigView' ? 'green' : ''"
-        @click="currentView = 'ConfigView'"
+        @click="view = 'ConfigView'"
       >
         <span class="mr-2">Config</span>
       </v-btn>
@@ -69,7 +69,6 @@
         <keep-alive>
           <view
             :is="currentView"
-            ref="view"
             @error="showError"
             @info="showInfo"
             @success="showSuccess"
@@ -92,11 +91,13 @@ export default {
   name: "App",
   components: {
     TxView: () =>
-      import(/* webpackChunkName: "components" */ "./components/TxView"),
+      import(/* webpackChunkName: "app_view_component" */ "./components/TxView"),
     ConfigView: () =>
-      import(/* webpackChunkName: "components" */ "./components/ConfigView"),
+      import(/* webpackChunkName: "app_view_component" */ "./components/ConfigView"),
     AlarmView: () =>
-      import(/* webpackChunkName: "components" */ "./components/AlarmView")
+      import(/* webpackChunkName: "app_view_component" */ "./components/AlarmView"),
+    LoginView: () =>
+      import(/* webpackChunkName: "app_view_component" */ "./components/LoginView")
   },
   data() {
     return {
@@ -104,14 +105,21 @@ export default {
       snackbar: false,
       snackMessage: "",
       snackType: "info",
-      currentView: "TxView"
+      view: "AlarmView"
     };
   },
   computed: {
-    ...mapGetters(["isConfigValid"]),
+    ...mapGetters(["isConfigValid", "isAuthenticated"]),
     ...mapGetters("alarm", ["alarms"]),
     showAlarm() {
       return this.alarms.length > 0;
+    },
+    currentView() {
+      if (this.isAuthenticated) {
+        return this.view;
+      } else {
+        return "LoginView";
+      }
     }
   },
   watch: {
@@ -123,7 +131,7 @@ export default {
     await this.INIT();
     if (this.isConfigValid) {
       // this.currentView = "TxView";
-      this.currentView = "AlarmView";
+      this.view = "AlarmView";
     }
     alarmAudio.loop = true;
   },
@@ -160,9 +168,6 @@ export default {
     clearAlarms() {
       alarmAudio.pause();
       alarmAudio.currentTime = 0;
-      // does not work
-      // if(this.currentView !== "AlarmView")
-      //   this.$refs.view.setPause(true);
       this.CLEAR_ALARMS();
     }
   }
