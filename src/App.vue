@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <v-snackbar v-model="snackbar" :timeout="5000" top :color="snackType">
+    <v-snackbar v-model="snackbar" :timeout="2666" top :color="snackType">
       {{ snackMessage }}
       <v-btn flat @click.native="snackbar = false">X</v-btn>
     </v-snackbar>

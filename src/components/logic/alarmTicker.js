@@ -43,6 +43,7 @@ export default {
             // update
             sym.price = rate;
             sym.dif = (sym.alarm / rate) * 100 - 100;
+            sym.difPercentage = new Number(sym.dif).toPrecision(4);
             // sound the alarm
             vm.soundAlarm(sym);
           }

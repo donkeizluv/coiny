@@ -120,7 +120,7 @@
                   </v-chip>
                 </td>
                 <td class="text-xs-center">
-                  {{ new Number(props.item.dif).toPrecision(4) }}%
+                  {{ props.item.difPercentage | percentage }}
                 </td>
                 <td class="text-xs-center">
                   {{ props.item.set ? "Yes" : "No" }}
@@ -163,6 +163,14 @@ import { mapActions, mapGetters } from "vuex";
 import Ticker from "./logic/alarmTicker";
 
 export default {
+  filters: {
+    percentage: function(value) {
+      if (!value) return "-";
+      if (Math.abs(value) > 9999) return ">9999%";
+      if (Math.abs(value) < 0.0001) return "<0.0001%";
+      return `${value}%`;
+    }
+  },
   data() {
     return {
       isConfigValid: true,
@@ -207,12 +215,7 @@ export default {
     },
     canAdd() {
       return (
-        this.rates.length > 0 &&
-        !isNaN(this.alarmValue) &&
-        this.alarmValue > 0 &&
-        !this.symbols.some(
-          s => s.symbol === this.selectedSymbol && s.up === this.isUpRd
-        )
+        this.rates.length > 0 && !isNaN(this.alarmValue) && this.alarmValue > 0
       );
     },
     isUpRd() {
@@ -257,23 +260,42 @@ export default {
     },
     onAddClick() {
       if (!this.canAdd) return;
+      // if new symbol matched current symbol, update it instead
+      let sym = this.symbols.find(
+        s => s.symbol === this.selectedSymbol && s.up === this.isUpRd
+      );
+      let symIndex = this.symbols.indexOf(sym || {});
+      // exists, update it
+      if (symIndex !== -1) {
+        sym.alarm = this.alarmValue;
+        sym.up = this.isUpRd;
+        sym.set = false;
+        sym.dif = 0;
+        sym.difPercentage = 0;
+        this.symbols[symIndex] = sym;
+        this.$emit("success", `Updated ${this.selectedSymbol}`);
+        return;
+      }
+      // create new symbol
       this.symbols.push(
-        this.createSymbol(this.selectedSymbol, this.alarmValue)
+        this.createSymbol(this.selectedSymbol, this.alarmValue, this.isUpRd)
       );
       this.$emit("success", `Added ${this.selectedSymbol}`);
     },
-    createSymbol(symbol, alarmValue) {
+    createSymbol(symbol, alarmValue, up) {
       let rate = this.getRate(this.selectedSymbol);
       let sym = {
         symbol: symbol,
         price: rate,
         alarm: Number(alarmValue),
         dif: 0,
+        difPercentage: 0,
         set: false,
-        up: this.isUpRd,
+        up: up,
         trend: 0
       };
       sym.dif = (sym.alarm / rate) * 100 - 100;
+      sym.difPercentage = new Number(sym.dif).toPrecision(4);
       return sym;
     },
     changeSort(column) {

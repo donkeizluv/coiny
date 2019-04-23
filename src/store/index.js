@@ -48,11 +48,13 @@ export default new Vuex.Store({
       "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
     openTxUrl: "https://etherscan.io/tx/{hash}",
     maxBlockHeight: 0,
+    // refactor these proxy options
     proxyPathRemote: "http://localhost:3000/p",
     proxyPathSelf: "/p",
     // proxyPathQuery: "url",
     // infra
-    auth: "/auth"
+    auth: "http://localhost:3000/auth",
+    selfAUth: "/auth"
   },
   getters: {
     isAuthenticated: s => s.isAuthenticated,
@@ -80,7 +82,7 @@ export default new Vuex.Store({
     openTxUrl: s => s.openTxUrl,
     // return proxy path that is ready to use
     proxyPath: s => `${s.isProd ? s.proxyPathSelf : s.proxyPathRemote}?url=`,
-    auth: s => s.auth
+    auth: s => `${s.isProd ? s.selfAuth : s.auth}`
   },
   mutations: {
     AUTHENTICATED: (s, v) => {

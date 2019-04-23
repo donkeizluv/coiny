@@ -1,5 +1,7 @@
 client:
 add router
+save list of Alarm & restore upon opening app
+
 
 server:
 ...
