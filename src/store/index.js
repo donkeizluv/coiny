@@ -54,7 +54,7 @@ export default new Vuex.Store({
     // proxyPathQuery: "url",
     // infra
     auth: "http://localhost:3000/auth",
-    selfAUth: "/auth"
+    selfAuth: "/auth"
   },
   getters: {
     isAuthenticated: s => s.isAuthenticated,
