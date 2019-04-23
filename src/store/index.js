@@ -21,7 +21,7 @@ export default new Vuex.Store({
     isProd: process.env.NODE_ENV === "production",
     isAuthenticated: false,
     // use self or remote proxy
-    useSelfProxy: !!process.env.SELF_PROXY,
+    // useSelfProxy: !!process.env.SELF_PROXY,
     isDebug: false,
     loading: false,
     // running: false,
@@ -50,7 +50,7 @@ export default new Vuex.Store({
     maxBlockHeight: 0,
     proxyPathRemote: "http://localhost:3000/p",
     proxyPathSelf: "/p",
-    proxyPathQuery: "url",
+    // proxyPathQuery: "url",
     // infra
     auth: "/auth"
   },
@@ -79,10 +79,7 @@ export default new Vuex.Store({
     readContractApi: s => s.readContractApi,
     openTxUrl: s => s.openTxUrl,
     // return proxy path that is ready to use
-    proxyPath: s =>
-      `${s.useSelfProxy ? s.proxyPathSelf : s.proxyPathRemote}?${
-        s.proxyPathQuery
-      }=`,
+    proxyPath: s => `${s.isProd ? s.proxyPathSelf : s.proxyPathRemote}?url=`,
     auth: s => s.auth
   },
   mutations: {
