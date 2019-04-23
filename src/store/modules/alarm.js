@@ -1,9 +1,12 @@
 /* eslint-disable no-console */
 import Axios from "axios";
+import localForage from "localforage";
 // import queryString from "query-string";
 
 const exchangeInfoStoreName = "coiny_ExchangeInfo";
 const bRequestWeightName = "REQUEST_WEIGHT";
+const symbolStoreName = "coiny_alarm_symbols";
+
 // initial state
 const state = {
   useProxy: true,
@@ -81,13 +84,12 @@ const actions = {
       return;
     }
     // check cache
-    let cache = localStorage.getItem(exchangeInfoStoreName);
+    let cache = await localForage.getItem(exchangeInfoStoreName);
     if (cache) {
-      let info = JSON.parse(cache);
-      if (info.expire > Date.now()) {
+      if (cache.expire > Date.now()) {
         // still good -> reuse
         // console.log("reuse exchangeInfo");
-        commit("SET_EXCHANGE", { data: info.data, expire: info.expire });
+        commit("SET_EXCHANGE", { data: cache.data, expire: cache.expire });
         return;
       }
     }
@@ -107,6 +109,12 @@ const actions = {
   },
   ALARM: async ({ commit }, p) => {
     commit("ALARMS", p);
+  },
+  PERSIST_SYMBOLS: async (s, p) => {
+    await localForage.setItem(symbolStoreName, p);
+  },
+  GET_STORE_SYMBOLS: async () => {
+    return await localForage.getItem(symbolStoreName);
   }
 };
 

@@ -14,10 +14,14 @@ router.get("/", function(req, res) {
     res.sendStatus(404);
     return;
   }
-  console.log(`${new Date()} - Forwarding: ${query.url}`);
-  res.removeHeader("Transfer-Encoding");
-  res.removeHeader("X-Powered-By");
-  req.pipe(request(req.query.url)).pipe(res);
+  // console.log(`${new Date()} - Forwarding: ${query.url}`);
+  try {
+    res.removeHeader("Transfer-Encoding");
+    res.removeHeader("X-Powered-By");
+    req.pipe(request(req.query.url)).pipe(res);
+  } catch (error) {
+    // console.log(error);
+  }
 });
 
 module.exports = router;

@@ -1,7 +1,6 @@
 client:
 add router
-save list of Alarm & restore upon opening app
-
+true auth
 
 server:
-...
+cache proxy

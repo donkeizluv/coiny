@@ -225,7 +225,8 @@ export default {
       return this.intervals.price.rate;
     }
   },
-  mounted() {
+  async mounted() {
+    await this.reloadFromStore();
     this.start();
   },
   beforeDestroy() {
@@ -241,7 +242,13 @@ export default {
     if (this.symbols.every(s => s.set)) this.isPaused = true;
   },
   methods: {
-    ...mapActions("alarm", ["REFRESH_EXCHANGE_INFO", "GET_RATE", "ALARM"]),
+    ...mapActions("alarm", [
+      "REFRESH_EXCHANGE_INFO",
+      "GET_RATE",
+      "ALARM",
+      "PERSIST_SYMBOLS",
+      "GET_STORE_SYMBOLS"
+    ]),
     start() {
       if (this.isRunning) return;
       this.isRunning = true;
@@ -255,10 +262,11 @@ export default {
     onSetSymbolClick(item) {
       item.set = false;
     },
-    onRemoveSymbolClick(item) {
+    async onRemoveSymbolClick(item) {
       this.symbols.splice(this.symbols.indexOf(item), 1);
+      await this.persist();
     },
-    onAddClick() {
+    async onAddClick() {
       if (!this.canAdd) return;
       // if new symbol matched current symbol, update it instead
       let sym = this.symbols.find(
@@ -273,6 +281,7 @@ export default {
         sym.dif = 0;
         sym.difPercentage = 0;
         this.symbols[symIndex] = sym;
+        await this.persist();
         this.$emit("success", `Updated ${this.selectedSymbol}`);
         return;
       }
@@ -280,7 +289,24 @@ export default {
       this.symbols.push(
         this.createSymbol(this.selectedSymbol, this.alarmValue, this.isUpRd)
       );
+      await this.persist();
       this.$emit("success", `Added ${this.selectedSymbol}`);
+    },
+    async persist() {
+      await this.PERSIST_SYMBOLS(this.symbols);
+    },
+    async reloadFromStore() {
+      let symbols = await this.GET_STORE_SYMBOLS();
+      console.log(symbols);
+      if (!symbols || symbols.length < 1) return;
+      // clear all dif and price
+      for (let index = 0; index < symbols.length; index++) {
+        const element = symbols[index];
+        element.dif = 0;
+        element.difPercentage = 0;
+        element.price = 0;
+      }
+      this.symbols = symbols;
     },
     createSymbol(symbol, alarmValue, up) {
       let rate = this.getRate(this.selectedSymbol);
@@ -314,7 +340,7 @@ export default {
         (this.rates.find(r => r.symbol === sym) || { price: 0 }).price
       );
     },
-    soundAlarm(sym) {
+    async soundAlarm(sym) {
       if (sym.set) return;
       if (
         (sym.up && sym.price >= sym.alarm) ||
@@ -327,6 +353,7 @@ export default {
           at: new Date().toLocaleTimeString()
         });
         sym.set = true;
+        await this.persist();
         this.$emit("notify", {
           title: "Coiny",
           message: `${sym.symbol}: ${sym.up ? "UP" : "DOWN"} to ${sym.price}`

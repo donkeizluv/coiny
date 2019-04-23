@@ -45,7 +45,7 @@ export default {
             sym.dif = (sym.alarm / rate) * 100 - 100;
             sym.difPercentage = new Number(sym.dif).toPrecision(4);
             // sound the alarm
-            vm.soundAlarm(sym);
+            await vm.soundAlarm(sym);
           }
           // done
           vm.isLoading = false;

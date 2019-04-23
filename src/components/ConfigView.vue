@@ -212,7 +212,7 @@ export default {
       this.newCoinListInterval = this.coinListInterval;
       this.changed = false;
     },
-    applyConfig() {
+    async applyConfig() {
       let p = {
         apiKey: this.newApiKey,
         txInterval: this.newTxInterval,
@@ -220,7 +220,7 @@ export default {
         walletAddress: this.newWalletAddress,
         coinListInterval: this.newCoinListInterval
       };
-      this.UPDATE_CONFIG(p);
+      await this.UPDATE_CONFIG(p);
       this.loadValues();
     },
     loadDefault() {

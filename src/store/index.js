@@ -3,6 +3,7 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import Axios from "axios";
+import localForage from "localforage";
 
 // modules
 import alarm from "./modules/alarm";
@@ -135,7 +136,7 @@ export default new Vuex.Store({
   },
   actions: {
     INIT: async ({ dispatch }) => {
-      dispatch("LOAD_CONFIG");
+      await dispatch("LOAD_CONFIG");
     },
     // RUNNING: ({ commit }, p) => {
     //   commit("RUNNING", p);
@@ -145,13 +146,12 @@ export default new Vuex.Store({
         // console.log("still fresh");
         return;
       }
-      let cachedCoins = localStorage.getItem(coinListStoreName);
+      let cachedCoins = await localForage.getItem(coinListStoreName);
       if (cachedCoins) {
-        let coins = JSON.parse(cachedCoins);
-        if (coins.expire > Date.now()) {
+        if (cachedCoins.expire > Date.now()) {
           // still good -> reuse
           commit("COIN_LIST", {
-            data: coins.data,
+            data: cachedCoins.data,
             expire: new Date().getTime() + getters.coinListInterval
           });
           return;
@@ -164,19 +164,16 @@ export default new Vuex.Store({
         data: coins,
         expire: new Date().getTime() + getters.coinListInterval
       };
-      dispatch("CACHE", coinListPayload);
+      await dispatch("CACHE", coinListPayload);
       commit("COIN_LIST", coinListPayload);
     },
     // TODO: change to expire instead of age
-    CACHE: (s, p) => {
+    CACHE: async (s, p) => {
       // console.log("master_rates: cache new rates...");
-      localStorage.setItem(
-        p.name,
-        JSON.stringify({
-          expire: p.expire,
-          data: p.data
-        })
-      );
+      await localForage.setItem(p.name, {
+        expire: p.expire,
+        data: p.data
+      });
     },
     FETCH_COIN_LIST: async ({ dispatch, getters }) => {
       dispatch("LOG", "Downloading coin list");
@@ -237,10 +234,8 @@ export default new Vuex.Store({
       return data;
     },
     GET_CONTRACT: async ({ dispatch }, p) => {
-      let tokenCached = localStorage.getItem(tokenInfoStoreName);
+      let tokenCached = await localForage.getItem(tokenInfoStoreName);
       if (tokenCached) {
-        console.log("token info: cache found");
-        tokenCached = JSON.parse(tokenCached);
         let token = tokenCached.find(t => t.address === p);
         if (token) {
           console.log("token info: cached token found");
@@ -253,7 +248,7 @@ export default new Vuex.Store({
         token = { decimal: data.decimals, symbol: data.symbol, address: p };
         // cache
         tokenCached.push(token);
-        localStorage.setItem(tokenInfoStoreName, JSON.stringify(tokenCached));
+        await localForage.setItem(tokenInfoStoreName, tokenCached);
         return token;
       }
       // create new token cache
@@ -263,7 +258,7 @@ export default new Vuex.Store({
       if (data.error) return null;
       let token = { decimal: data.decimals, symbol: data.symbol, address: p };
       tokenCached.push(token);
-      localStorage.setItem(tokenInfoStoreName, JSON.stringify(tokenCached));
+      await localForage.setItem(tokenInfoStoreName, tokenCached);
       return token;
     },
     // ALERT: async (s, p) => {
@@ -273,11 +268,10 @@ export default new Vuex.Store({
     //     hash: p.txHash
     //   });
     // },
-    LOAD_CONFIG: ({ commit, dispatch }) => {
-      let config = localStorage.getItem(configStoreName);
+    LOAD_CONFIG: async ({ commit, dispatch }) => {
+      let config = await localForage.getItem(configStoreName);
       if (config) {
-        config = JSON.parse(config);
-        if (dispatch("UPDATE_CONFIG", config)) {
+        if (await dispatch("UPDATE_CONFIG", config)) {
           commit("IS_CONFIG_VALID", true);
           return true;
         }
@@ -285,16 +279,16 @@ export default new Vuex.Store({
       }
       return false;
     },
-    UPDATE_CONFIG: ({ commit, dispatch }, p) => {
+    UPDATE_CONFIG: async ({ commit, dispatch }, p) => {
       if (!p) throw new Error("Invalid payload.");
       // check config
       commit("CONFIG", p);
-      dispatch("SAVE_CONFIG", p);
+      await dispatch("SAVE_CONFIG", p);
       commit("IS_CONFIG_VALID", true);
       return true;
     },
-    SAVE_CONFIG: (s, p) => {
-      localStorage.setItem(configStoreName, JSON.stringify(p));
+    SAVE_CONFIG: async (s, p) => {
+      await localForage.setItem(configStoreName, p);
     },
     LOAD_DEFAULT_CONFIG: ({ commit }) => {
       commit("DEFAULT_CONFIG");
