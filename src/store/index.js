@@ -44,9 +44,9 @@ export default new Vuex.Store({
     blockHeightApi:
       "https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={key}",
     txByAddressApi:
-      "http://api.etherscan.io/api?module=account&action=tokentx&address={address}&startblock={start}&endblock={end}&sort=asc&apikey={key}",
+      "https://api.etherscan.io/api?module=account&action=tokentx&address={address}&startblock={start}&endblock={end}&sort=asc&apikey={key}",
     readContractApi:
-      "http://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
+      "https://api.ethplorer.io/getTokenInfo/{address}?apiKey=freekey",
     openTxUrl: "https://etherscan.io/tx/{hash}",
     maxBlockHeight: 0,
     // refactor these proxy options
