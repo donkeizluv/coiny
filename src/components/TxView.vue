@@ -262,6 +262,7 @@ export default {
       // "RUNNING"
       // "ALERT"
     ]),
+    ...mapActions("alarm", ["ALARM"]),
     convertToItems(raw) {
       return raw.map(t => {
         let item = {

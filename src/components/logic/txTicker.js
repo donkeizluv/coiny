@@ -73,9 +73,17 @@ export default {
             }
             let items = vm.convertToItems(result);
             // notify
-            // items.forEach(i => {
-            //   if (i.value > vm.minValue) vm.ALERT(i);
-            // });
+            items.forEach(i => {
+              if (i.value > vm.minValue) {
+                // vm.ALERT(i);
+                vm.ALARM({
+                  symbol: i.symbol,
+                  price: i.price,
+                  up: true,
+                  at: new Date().toLocaleTimeString()
+                });
+              }
+            });
             vm.items.push(...items);
             vm.localLoading = false;
           }

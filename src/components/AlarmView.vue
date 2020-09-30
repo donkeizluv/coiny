@@ -297,7 +297,6 @@ export default {
     },
     async reloadFromStore() {
       let symbols = await this.GET_STORE_SYMBOLS();
-      console.log(symbols);
       if (!symbols || symbols.length < 1) return;
       // clear all dif and price
       for (let index = 0; index < symbols.length; index++) {
